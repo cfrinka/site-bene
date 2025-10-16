@@ -1,103 +1,84 @@
-import Image from "next/image";
+import Image from 'next/image'
 
-export default function Home() {
+export default function HomePage() {
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
+    <div className="relative min-h-screen flex items-center justify-center text-white">
+      <div className="fixed inset-0 -z-20">
         <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
+          src="https://firebasestorage.googleapis.com/v0/b/bene-brasil-533af.firebasestorage.app/o/logo%2Fbackground.png?alt=media&token=07ff8835-b388-4a9c-8ea4-80ee579df285"
+          alt="Background"
+          fill
+          priority={false}
+          loading="lazy"
+          quality={60}
+          sizes="100vw"
+          className="object-cover"
         />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+      </div>
+      <div className="fixed inset-0 -z-10 bg-black/30 backdrop-blur-sm" />
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+      <div className="relative z-0 w-full max-w-3xl px-6 md:px-8 text-center">
+        <div className="mx-auto mb-8 relative w-48 h-48 md:w-56 md:h-56">
+          <Image
+            src="https://firebasestorage.googleapis.com/v0/b/bene-brasil-533af.firebasestorage.app/o/logo%2Flogo%20site.png?alt=media&token=42c505a9-9b42-404d-9a22-2ec4ee115fa1"
+            alt="Benê Brasil"
+            fill
+            className="object-contain"
+            priority
+            fetchPriority="high"
+            sizes="(max-width: 768px) 192px, 224px"
+          />
+        </div>
+
+        <h1 className="text-4xl md:text-6xl font-extrabold tracking-wide leading-tight">
+          EM CONSTRUÇÃO
+        </h1>
+        <p className="mt-2 uppercase tracking-[0.25em] text-white/80 text-sm md:text-base">
+          Site quase pronto
+        </p>
+
+        <div className="mt-6 md:mt-8 w-full max-w-xl mx-auto">
+          <div className="flex justify-between text-xs text-white/60 mb-2">
+            <span>0%</span>
+            <span>100%</span>
+          </div>
+          <div className="h-2 w-full bg-white/20 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-[#2A5473]"
+              style={{ width: '60%' }}
             />
-            Deploy now
-          </a>
+          </div>
+        </div>
+
+        <div className="mt-8">
           <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+            href="https://instagram.com/benebrasiloficial"
             target="_blank"
             rel="noopener noreferrer"
+            className="inline-flex items-center justify-center px-5 py-3 rounded-md bg-white text-black hover:bg-white/90 transition font-medium"
           >
-            Read our docs
+            Siga no Instagram
           </a>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        <div className="mt-10 flex items-center justify-center gap-6">
+          <a
+            href="https://instagram.com/benebrasiloficial"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Instagram Benê Brasil"
+            className="w-10 h-10 rounded-full border border-white/40 flex items-center justify-center hover:bg-white/10 transition"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M7 2H17C20 2 22 4 22 7V17C22 20 20 22 17 22H7C4 22 2 20 2 17V7C2 4 4 2 7 2Z" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M16.5 7.5H16.51" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M12 8.5C9.79 8.5 8 10.29 8 12.5C8 14.71 9.79 16.5 12 16.5C14.21 16.5 16 14.71 16 12.5C16 10.29 14.21 8.5 12 8.5Z" stroke="currentColor" strokeWidth="1.5" />
+            </svg>
+          </a>
+        </div>
+
+        <p className="mt-8 text-xs text-white/60">© {new Date().getFullYear()} Benê Brasil</p>
+      </div>
     </div>
-  );
+  )
 }

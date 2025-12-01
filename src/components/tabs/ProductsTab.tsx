@@ -16,12 +16,13 @@ export default function ProductsTab() {
   const [collectionsCountByProduct, setCollectionsCountByProduct] = useState<Record<string, number>>({});
   const [collectionTitlesByProduct, setCollectionTitlesByProduct] = useState<Record<string, string[]>>({});
   const { show } = useToast();
-  const [form, setForm] = useState({ 
-    title: "", 
-    price: "", 
+  const [form, setForm] = useState({
+    title: "",
+    price: "",
     cover: "",
     sizes: [] as string[],
-    colors: [] as string[]
+    colors: [] as string[],
+    colorImages: {} as Record<string, string>
   });
   const [uploading, setUploading] = useState(false);
 
@@ -91,23 +92,24 @@ export default function ProductsTab() {
     if (!enabled) { show({ variant: 'warning', title: 'Firebase desativado' }); return; }
     if (form.sizes.length === 0) { show({ variant: 'warning', title: 'Selecione pelo menos um tamanho' }); return; }
     if (form.colors.length === 0) { show({ variant: 'warning', title: 'Selecione pelo menos uma cor' }); return; }
-    
+
     const price = parseFloat(form.price.replace(',', '.')) || 0;
-    await saveDocument('products', { 
-      title: form.title, 
-      price, 
+    await saveDocument('products', {
+      title: form.title,
+      price,
       cover: form.cover,
       sizes: form.sizes,
-      colors: form.colors
+      colors: form.colors,
+      colorImages: form.colorImages
     });
     show({ variant: 'success', title: 'Produto salvo' });
-    setForm({ title: '', price: '', cover: '', sizes: [], colors: [] });
+    setForm({ title: '', price: '', cover: '', sizes: [], colors: [], colorImages: {} });
   }
 
   const toggleSize = (size: string) => {
     setForm(f => ({
       ...f,
-      sizes: f.sizes.includes(size) 
+      sizes: f.sizes.includes(size)
         ? f.sizes.filter(s => s !== size)
         : [...f.sizes, size]
     }));
@@ -130,7 +132,7 @@ export default function ProductsTab() {
       setUploading(true);
       const up = await uploadFile(`products/${Date.now()}-${file.name}`, file);
       if ((up as any).ok) {
-        setForm((f)=>({ ...f, cover: (up as any).url }));
+        setForm((f) => ({ ...f, cover: (up as any).url }));
         show({ variant: 'success', title: 'Imagem enviada' });
       } else {
         show({ variant: 'error', title: 'Falha ao enviar' });
@@ -142,6 +144,25 @@ export default function ProductsTab() {
     }
   }
 
+  async function handleColorImageUpload(colorName: string, e: React.ChangeEvent<HTMLInputElement>) {
+    const inputEl = e.currentTarget;
+    const file = inputEl.files?.[0]; if (!file) { inputEl.value = ''; return; }
+    if (!enabled) { show({ variant: 'warning', title: 'Firebase desativado' }); inputEl.value = ''; return; }
+    try {
+      setUploading(true);
+      const up = await uploadFile(`products/${Date.now()}-${colorName}-${file.name}`, file);
+      if ((up as any).ok) {
+        setForm((f) => ({ ...f, colorImages: { ...f.colorImages, [colorName]: (up as any).url } }));
+        show({ variant: 'success', title: `Imagem da cor ${colorName} enviada` });
+      } else {
+        show({ variant: 'error', title: 'Falha ao enviar' });
+      }
+    } finally {
+      setUploading(false);
+      if (inputEl) inputEl.value = '';
+    }
+  }
+
   return (
     <div>
       <h1 className="text-2xl font-display font-semibold mb-4">Produtos</h1>
@@ -149,9 +170,9 @@ export default function ProductsTab() {
       <Card className="mb-6">
         <CardBody>
           <div className="grid gap-3 sm:grid-cols-2">
-            <input className="rounded-md border border-neutral-300 px-3 py-2" placeholder="Título" value={form.title} onChange={(e)=>setForm(f=>({...f,title:e.target.value}))} />
-            <input className="rounded-md border border-neutral-300 px-3 py-2" placeholder="Preço" inputMode="decimal" value={form.price} onChange={(e)=>setForm(f=>({...f,price:e.target.value}))} />
-            <input className="rounded-md border border-neutral-300 px-3 py-2 sm:col-span-2" placeholder="Capa (URL)" value={form.cover} onChange={(e)=>setForm(f=>({...f,cover:e.target.value}))} />
+            <input className="rounded-md border border-neutral-300 px-3 py-2" placeholder="Título" value={form.title} onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))} />
+            <input className="rounded-md border border-neutral-300 px-3 py-2" placeholder="Preço" inputMode="decimal" value={form.price} onChange={(e) => setForm(f => ({ ...f, price: e.target.value }))} />
+            <input className="rounded-md border border-neutral-300 px-3 py-2 sm:col-span-2" placeholder="Capa (URL)" value={form.cover} onChange={(e) => setForm(f => ({ ...f, cover: e.target.value }))} />
             <div className="sm:col-span-2 flex items-center gap-3">
               <label className="inline-flex items-center gap-2 rounded-md border border-neutral-300 px-3 py-2 cursor-pointer hover:bg-neutral-50">
                 <input type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} />
@@ -171,11 +192,10 @@ export default function ProductsTab() {
                     key={size}
                     type="button"
                     onClick={() => toggleSize(size)}
-                    className={`px-4 py-2 rounded-md border transition-colors font-medium ${
-                      form.sizes.includes(size)
-                        ? "border-[#2A5473] bg-[#2A5473] text-white"
-                        : "border-neutral-300 hover:border-neutral-400 bg-white"
-                    }`}
+                    className={`px-4 py-2 rounded-md border transition-colors font-medium ${form.sizes.includes(size)
+                      ? "border-[#2A5473] bg-[#2A5473] text-white"
+                      : "border-neutral-300 hover:border-neutral-400 bg-white"
+                      }`}
                   >
                     {size}
                   </button>
@@ -199,11 +219,10 @@ export default function ProductsTab() {
                     key={color.name}
                     type="button"
                     onClick={() => toggleColor(color.name)}
-                    className={`flex flex-col items-center gap-1 p-2 rounded-md border transition-colors bg-white ${
-                      form.colors.includes(color.name)
-                        ? "border-[#2A5473] ring-2 ring-[#2A5473]/20"
-                        : "border-neutral-200 hover:border-neutral-300"
-                    }`}
+                    className={`flex flex-col items-center gap-1 p-2 rounded-md border transition-colors bg-white ${form.colors.includes(color.name)
+                      ? "border-[#2A5473] ring-2 ring-[#2A5473]/20"
+                      : "border-neutral-200 hover:border-neutral-300"
+                      }`}
                   >
                     <div
                       className="w-8 h-8 rounded-full border-2 border-neutral-300"
@@ -219,6 +238,49 @@ export default function ProductsTab() {
                 </p>
               )}
             </div>
+
+            {/* Color-specific images */}
+            {form.colors.length > 0 && (
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  Imagens por cor (opcional)
+                </label>
+                <p className="text-xs text-neutral-500 mb-3">
+                  Envie uma imagem para cada cor. Se não enviar, será usada a imagem de capa.
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {form.colors.map((colorName) => {
+                    const colorDef = AVAILABLE_COLORS.find(c => c.name === colorName);
+                    return (
+                      <div key={colorName} className="border border-neutral-200 rounded-md p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div
+                            className="w-5 h-5 rounded-full border-2 border-neutral-300"
+                            style={{ backgroundColor: colorDef?.value }}
+                          />
+                          <span className="text-sm font-medium">{colorName}</span>
+                        </div>
+                        <label className="inline-flex items-center gap-2 rounded-md border border-neutral-300 px-3 py-1.5 cursor-pointer hover:bg-neutral-50 text-sm">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => handleColorImageUpload(colorName, e)}
+                            disabled={uploading}
+                          />
+                          {form.colorImages[colorName] ? '✓ Enviada' : 'Enviar imagem'}
+                        </label>
+                        {form.colorImages[colorName] && (
+                          <p className="text-xs text-neutral-500 mt-1 truncate">
+                            {form.colorImages[colorName].split('/').pop()}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <div className="sm:col-span-2">
               <Button onClick={saveProduct} disabled={!form.title || form.sizes.length === 0 || form.colors.length === 0}>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
-import { updateDocument } from "@/lib/firebase";
+import { updateDocument, uploadFile } from "@/lib/firebase";
 import { useToast } from "@/components/ui/Toast";
 
 const AVAILABLE_SIZES = ["P", "M", "G", "GG", "G1"];
@@ -23,6 +23,7 @@ type Product = {
   cover?: string;
   sizes?: string[];
   colors?: string[];
+  colorImages?: Record<string, string>;
 };
 
 type EditProductModalProps = {
@@ -34,7 +35,9 @@ type EditProductModalProps = {
 export default function EditProductModal({ product, onClose, onSave }: EditProductModalProps) {
   const [sizes, setSizes] = useState<string[]>(product.sizes || []);
   const [colors, setColors] = useState<string[]>(product.colors || []);
+  const [colorImages, setColorImages] = useState<Record<string, string>>(product.colorImages || {});
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const { show } = useToast();
 
   const toggleSize = (size: string) => {
@@ -47,6 +50,29 @@ export default function EditProductModal({ product, onClose, onSave }: EditProdu
     setColors(prev =>
       prev.includes(colorName) ? prev.filter(c => c !== colorName) : [...prev, colorName]
     );
+  };
+
+  const handleColorImageUpload = async (colorName: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputEl = e.currentTarget;
+    const file = inputEl.files?.[0];
+    if (!file) {
+      inputEl.value = '';
+      return;
+    }
+
+    try {
+      setUploading(true);
+      const up = await uploadFile(`products/${Date.now()}-${colorName}-${file.name}`, file);
+      if ((up as any).ok) {
+        setColorImages(prev => ({ ...prev, [colorName]: (up as any).url }));
+        show({ variant: 'success', title: `Imagem da cor ${colorName} enviada` });
+      } else {
+        show({ variant: 'error', title: 'Falha ao enviar' });
+      }
+    } finally {
+      setUploading(false);
+      if (inputEl) inputEl.value = '';
+    }
   };
 
   const handleSave = async () => {
@@ -64,6 +90,7 @@ export default function EditProductModal({ product, onClose, onSave }: EditProdu
       await updateDocument('products', product.id, {
         sizes,
         colors,
+        colorImages,
       });
       show({ variant: 'success', title: 'Produto atualizado' });
       onSave();
@@ -96,11 +123,10 @@ export default function EditProductModal({ product, onClose, onSave }: EditProdu
                 key={size}
                 type="button"
                 onClick={() => toggleSize(size)}
-                className={`px-4 py-2 rounded-md border transition-colors font-medium ${
-                  sizes.includes(size)
-                    ? "border-[#2A5473] bg-[#2A5473] text-white"
-                    : "border-neutral-300 hover:border-neutral-400 bg-white"
-                }`}
+                className={`px-4 py-2 rounded-md border transition-colors font-medium ${sizes.includes(size)
+                  ? "border-[#2A5473] bg-[#2A5473] text-white"
+                  : "border-neutral-300 hover:border-neutral-400 bg-white"
+                  }`}
               >
                 {size}
               </button>
@@ -124,11 +150,10 @@ export default function EditProductModal({ product, onClose, onSave }: EditProdu
                 key={color.name}
                 type="button"
                 onClick={() => toggleColor(color.name)}
-                className={`flex flex-col items-center gap-1 p-2 rounded-md border transition-colors bg-white ${
-                  colors.includes(color.name)
-                    ? "border-[#2A5473] ring-2 ring-[#2A5473]/20"
-                    : "border-neutral-200 hover:border-neutral-300"
-                }`}
+                className={`flex flex-col items-center gap-1 p-2 rounded-md border transition-colors bg-white ${colors.includes(color.name)
+                  ? "border-[#2A5473] ring-2 ring-[#2A5473]/20"
+                  : "border-neutral-200 hover:border-neutral-300"
+                  }`}
               >
                 <div
                   className="w-8 h-8 rounded-full border-2 border-neutral-300"
@@ -144,6 +169,49 @@ export default function EditProductModal({ product, onClose, onSave }: EditProdu
             </p>
           )}
         </div>
+
+        {/* Color-specific images */}
+        {colors.length > 0 && (
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-neutral-700 mb-2">
+              Imagens por cor (opcional)
+            </label>
+            <p className="text-xs text-neutral-500 mb-3">
+              Envie uma imagem para cada cor. Se não enviar, será usada a imagem de capa do produto.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {colors.map((colorName) => {
+                const colorDef = AVAILABLE_COLORS.find(c => c.name === colorName);
+                return (
+                  <div key={colorName} className="border border-neutral-200 rounded-md p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div
+                        className="w-5 h-5 rounded-full border-2 border-neutral-300"
+                        style={{ backgroundColor: colorDef?.value }}
+                      />
+                      <span className="text-sm font-medium">{colorName}</span>
+                    </div>
+                    <label className="inline-flex items-center gap-2 rounded-md border border-neutral-300 px-3 py-1.5 cursor-pointer hover:bg-neutral-50 text-sm">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleColorImageUpload(colorName, e)}
+                        disabled={uploading}
+                      />
+                      {colorImages[colorName] ? '✓ Enviada' : 'Enviar imagem'}
+                    </label>
+                    {colorImages[colorName] && (
+                      <p className="text-xs text-neutral-500 mt-1 truncate">
+                        {colorImages[colorName].split('/').pop()}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex gap-2 justify-end">

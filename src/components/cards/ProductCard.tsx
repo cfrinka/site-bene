@@ -8,7 +8,7 @@ import Badge from "@/components/ui/Badge";
 import { isFirebaseEnabled, saveDocument, updateDocument, deleteDocument, listCollection } from "@/lib/firebase";
 import EditProductModal from "@/components/modals/EditProductModal";
 
-export type Product = { id: string; title?: string; price?: number; cover?: string; sizes?: string[]; colors?: string[] };
+export type Product = { id: string; title?: string; price?: number; cover?: string; sizes?: string[]; colors?: string[]; colorImages?: Record<string, string> };
 
 type Collection = { id: string; title?: string; productIds?: string[] };
 
@@ -59,7 +59,7 @@ export default function ProductCard({ product, inHighlights = false, collections
       <CardBody>
         <div className="font-medium truncate">{p.title || "Produto"}</div>
         <div className="text-sm text-neutral-600">R$ {(p.price ?? 0).toFixed(2)}</div>
-        
+
         {/* Variants info */}
         {(p.sizes && p.sizes.length > 0) || (p.colors && p.colors.length > 0) ? (
           <div className="mt-2 flex flex-wrap gap-1 text-xs">
@@ -79,7 +79,7 @@ export default function ProductCard({ product, inHighlights = false, collections
             ⚠️ Sem variantes configuradas
           </div>
         )}
-        
+
         <div className="mt-3 flex items-center justify-between gap-2">
           <Button size="sm" variant="outline" onClick={() => setOpen((v) => !v)}>Ações</Button>
           <div className="flex flex-wrap items-center gap-2">
@@ -91,8 +91,8 @@ export default function ProductCard({ product, inHighlights = false, collections
         </div>
         {open && (
           <div className="mt-3 rounded-md border border-neutral-200 text-sm">
-            <button 
-              className="w-full text-left px-3 py-2 hover:bg-neutral-50" 
+            <button
+              className="w-full text-left px-3 py-2 hover:bg-neutral-50"
               onClick={() => {
                 setEditModalOpen(true);
                 setOpen(false);

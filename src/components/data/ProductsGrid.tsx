@@ -25,7 +25,18 @@ type Product = {
   badge?: string;
   sizes?: string[];
   colors?: string[];
+  colorImages?: Record<string, string>;
 };
+
+const ALL_COLORS = [
+  { name: "Preto", value: "#000000" },
+  { name: "Branco", value: "#FFFFFF" },
+  { name: "Cinza", value: "#808080" },
+  { name: "Azul", value: "#0000FF" },
+  { name: "Vermelho", value: "#FF0000" },
+  { name: "Verde", value: "#008000" },
+  { name: "Amarelo", value: "#FFFF00" },
+];
 
 export default function ProductsGrid({ limit = 6, cols = "sm:grid-cols-2 lg:grid-cols-3" }: { limit?: number; cols?: string }) {
   const [items, setItems] = useState<Product[]>([]);
@@ -33,6 +44,7 @@ export default function ProductsGrid({ limit = 6, cols = "sm:grid-cols-2 lg:grid
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [variantModalOpen, setVariantModalOpen] = useState(false);
   const [pendingProduct, setPendingProduct] = useState<Product | null>(null);
+  const [hoveredColors, setHoveredColors] = useState<Record<string, string>>({});
   const enabled = isFirebaseEnabled();
   const { user } = useAuth();
   const { addItem } = useCart();
@@ -108,26 +120,69 @@ export default function ProductsGrid({ limit = 6, cols = "sm:grid-cols-2 lg:grid
 
   return (
     <div className={`grid gap-6 ${cols}`}>
-      {data.map((p: Product, i) => (
-        <Card key={p.id ?? i} className="overflow-hidden">
-          <div className="relative h-56 bg-neutral-100">
-            <Image src={p.cover ?? picsum(`prod-${i}`, 800, 800)} alt={p.title ?? "Produto"} fill className="object-cover" />
-            {p.badge && (
-              <div className="absolute left-3 top-3">
-                <Badge className="bg-brand-accent text-white">{p.badge}</Badge>
-              </div>
-            )}
-          </div>
-          <CardBody>
-            <h3 className="font-display font-semibold text-xl tracking-wide">{p.title ?? "Produto"}</h3>
-            <p className="mt-1 text-sm text-neutral-600">Algodão premium • Unissex</p>
-            <div className="mt-3 flex items-center justify-between">
-              <span className="text-[#1f9d61] font-semibold">R$ {(p.price ?? 0).toFixed(2)}</span>
-              <Button size="sm" onClick={() => handleAddToCart(p)}>Adicionar</Button>
+      {data.map((p: Product, i) => {
+        const productId = p.id ?? `prod-${i}`;
+        const hoveredColor = hoveredColors[productId];
+        const displayImage = hoveredColor && p.colorImages?.[hoveredColor]
+          ? p.colorImages[hoveredColor]
+          : p.cover ?? picsum(`prod-${i}`, 800, 800);
+
+        // Get available colors with their hex values
+        const availableColors = p.colors
+          ? ALL_COLORS.filter(c => p.colors!.includes(c.name))
+          : [];
+
+        return (
+          <Card key={productId} className="overflow-hidden">
+            <div className="relative h-56 bg-neutral-100">
+              <Image
+                src={displayImage}
+                alt={p.title ?? "Produto"}
+                fill
+                className="object-cover transition-opacity duration-300"
+              />
+              {p.badge && (
+                <div className="absolute left-3 top-3">
+                  <Badge className="bg-brand-accent text-white">{p.badge}</Badge>
+                </div>
+              )}
             </div>
-          </CardBody>
-        </Card>
-      ))}
+            <CardBody>
+              <h3 className="font-display font-semibold text-xl tracking-wide">{p.title ?? "Produto"}</h3>
+              <p className="mt-1 text-sm text-neutral-600">Algodão premium • Unissex</p>
+
+              {/* Color swatches */}
+              {availableColors.length > 0 && (
+                <div className="mt-2 flex gap-2 items-center">
+                  <span className="text-xs text-neutral-500">Cores:</span>
+                  <div className="flex gap-1.5">
+                    {availableColors.map((color) => (
+                      <button
+                        key={color.name}
+                        type="button"
+                        onMouseEnter={() => setHoveredColors(prev => ({ ...prev, [productId]: color.name }))}
+                        onMouseLeave={() => setHoveredColors(prev => ({ ...prev, [productId]: "" }))}
+                        className={`w-6 h-6 rounded-full border-2 transition-all ${hoveredColor === color.name
+                            ? "border-neutral-800 scale-110"
+                            : "border-neutral-300 hover:border-neutral-500"
+                          }`}
+                        style={{ backgroundColor: color.value }}
+                        title={color.name}
+                        aria-label={color.name}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-3 flex items-center justify-between">
+                <span className="text-[#1f9d61] font-semibold">R$ {(p.price ?? 0).toFixed(2)}</span>
+                <Button size="sm" onClick={() => handleAddToCart(p)}>Adicionar</Button>
+              </div>
+            </CardBody>
+          </Card>
+        );
+      })}
 
       <AuthModal
         isOpen={authModalOpen}

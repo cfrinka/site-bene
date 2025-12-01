@@ -61,7 +61,7 @@ export default function HomeSections() {
       {/* Carousel */}
       {carousel.length > 0 && (
         <section className="py-8">
-          <Container>
+          <div className="mx-auto max-w-6xl px-6">
             <div className="relative">
               <div
                 className="overflow-hidden rounded-lg"
@@ -77,16 +77,18 @@ export default function HomeSections() {
               >
                 <div
                   className="flex transition-transform duration-500"
-                  style={{ transform: `translateX(-${index * 100}%)`, width: `${carousel.length * 100}%` }}
+                  style={{ transform: `translateX(-${index * 100}%)` }}
                 >
                   {carousel.map((it, idx) => (
-                    <a key={idx} href={it.href || "#"} className="relative w-full shrink-0 h-56 sm:h-64 lg:h-80 bg-neutral-100">
-                      {it.image ? (
-                        <Image src={it.image} alt={"Slide " + (idx + 1)} fill className="object-cover" />
-                      ) : (
-                        <div className="absolute inset-0 grid place-items-center text-neutral-500">Sem imagem</div>
-                      )}
-                    </a>
+                    <div key={idx} className="w-full shrink-0">
+                      <a href={it.href || "#"} className="relative block w-full h-56 sm:h-64 lg:h-80 bg-neutral-100">
+                        {it.image ? (
+                          <Image src={it.image} alt={"Slide " + (idx + 1)} fill className="object-cover object-center" />
+                        ) : (
+                          <div className="absolute inset-0 grid place-items-center text-neutral-500">Sem imagem</div>
+                        )}
+                      </a>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -117,7 +119,7 @@ export default function HomeSections() {
                 ))}
               </div>
             </div>
-          </Container>
+          </div>
         </section>
       )}
 

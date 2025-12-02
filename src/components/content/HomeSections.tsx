@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { getFirebase, isFirebaseEnabled, listCollection, subscribeCollection } from "@/lib/firebase";
 import Container from "@/components/ui/Container";
 
-export default function HomeSections() {
+export default function HomeSections({ onlyCarousel = false, onlyBlocks = false }: { onlyCarousel?: boolean; onlyBlocks?: boolean }) {
   const enabled = isFirebaseEnabled();
   const [doc, setDoc] = useState<any | null>(null);
 
@@ -59,7 +59,7 @@ export default function HomeSections() {
   return (
     <>
       {/* Carousel */}
-      {carousel.length > 0 && (
+      {!onlyBlocks && carousel.length > 0 && (
         <section className="py-8">
           <div className="mx-auto max-w-6xl px-6">
             <div className="relative">
@@ -124,7 +124,7 @@ export default function HomeSections() {
       )}
 
       {/* Featured blocks */}
-      {blocks.length > 0 && (
+      {!onlyCarousel && blocks.length > 0 && (
         <section className="py-10">
           <Container>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

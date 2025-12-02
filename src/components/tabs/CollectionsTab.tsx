@@ -8,7 +8,7 @@ import { useToast } from "@/components/ui/Toast";
 import { isFirebaseEnabled, getFirebase, subscribeCollection, listCollection, saveDocument, uploadFile, existsByField, updateDocument, deleteDocument } from "@/lib/firebase";
 
 type Product = { id: string; title?: string; price?: number; cover?: string };
-type Collection = { id?: string; title?: string; slug?: string; cover?: string; productIds?: string[] };
+type Collection = { id?: string; title?: string; slug?: string; description?: string; cover?: string; productIds?: string[] };
 
 export default function CollectionsTab() {
   const enabled = isFirebaseEnabled();
@@ -18,9 +18,10 @@ export default function CollectionsTab() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const [form, setForm] = useState<Collection>({ title: "", slug: "", cover: "", productIds: [] });
+  const [form, setForm] = useState<Collection>({ title: "", slug: "", description: "", cover: "", productIds: [] });
   const [uploading, setUploading] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingCollectionId, setEditingCollectionId] = useState<string | null>(null);
+  const [editingProductsId, setEditingProductsId] = useState<string | null>(null);
   const [tempIds, setTempIds] = useState<string[]>([]);
   const [showPicker, setShowPicker] = useState<boolean>(false);
 
@@ -57,7 +58,7 @@ export default function CollectionsTab() {
     try {
       setUploading(true);
       const up = await uploadFile(`collections/covers/${Date.now()}-${file.name}`, file);
-      if ((up as any).ok) { setForm(f=>({ ...f, cover: (up as any).url })); show({ variant: 'success', title: 'Capa enviada' }); }
+      if ((up as any).ok) { setForm(f => ({ ...f, cover: (up as any).url })); show({ variant: 'success', title: 'Capa enviada' }); }
       else { show({ variant: 'error', title: 'Falha ao enviar' }); }
     } finally {
       setUploading(false);
@@ -67,25 +68,51 @@ export default function CollectionsTab() {
 
   async function saveCollectionForm() {
     if (!enabled) { show({ variant: 'warning', title: 'Firebase desativado' }); return; }
+    if (!form.title) { show({ variant: 'warning', title: 'Título obrigatório' }); return; }
     if (!form.slug) { show({ variant: 'warning', title: 'Slug obrigatório' }); return; }
-    const chk = await existsByField('collections', 'slug', form.slug);
-    if ((chk as any).ok && (chk as any).exists) { show({ variant: 'error', title: 'Slug já existe' }); return; }
-    await saveDocument('collections', { ...form });
-    show({ variant: 'success', title: 'Coleção salva' });
-    setForm({ title: '', slug: '', cover: '', productIds: [] });
+
+    if (editingCollectionId) {
+      // Update existing collection
+      const existing = collections.find(c => String(c.id) === editingCollectionId);
+      if (existing && existing.slug !== form.slug) {
+        // Check if new slug already exists
+        const chk = await existsByField('collections', 'slug', form.slug);
+        if ((chk as any).ok && (chk as any).exists) { show({ variant: 'error', title: 'Slug já existe' }); return; }
+      }
+      await updateDocument('collections', editingCollectionId, { title: form.title, slug: form.slug, description: form.description, cover: form.cover });
+      show({ variant: 'success', title: 'Coleção atualizada' });
+      setEditingCollectionId(null);
+    } else {
+      // Create new collection
+      const chk = await existsByField('collections', 'slug', form.slug);
+      if ((chk as any).ok && (chk as any).exists) { show({ variant: 'error', title: 'Slug já existe' }); return; }
+      await saveDocument('collections', { ...form });
+      show({ variant: 'success', title: 'Coleção criada' });
+    }
+    setForm({ title: '', slug: '', description: '', cover: '', productIds: [] });
+  }
+
+  function startEditCollection(c: Collection) {
+    setEditingCollectionId(String(c.id));
+    setForm({ title: c.title || '', slug: c.slug || '', description: c.description || '', cover: c.cover || '', productIds: c.productIds || [] });
+  }
+
+  function cancelEditCollection() {
+    setEditingCollectionId(null);
+    setForm({ title: '', slug: '', description: '', cover: '', productIds: [] });
   }
 
   function openEditProducts(c: Collection) {
-    setEditingId(String(c.id));
+    setEditingProductsId(String(c.id));
     setTempIds(Array.isArray(c.productIds) ? [...c.productIds] : []);
     setShowPicker(false);
   }
 
   async function saveEditProducts() {
-    if (!enabled || !editingId) return;
-    await updateDocument('collections', editingId, { productIds: tempIds });
+    if (!enabled || !editingProductsId) return;
+    await updateDocument('collections', editingProductsId, { productIds: tempIds });
     show({ variant: 'success', title: 'Produtos atualizados' });
-    setEditingId(null);
+    setEditingProductsId(null);
     setTempIds([]);
   }
 
@@ -99,13 +126,15 @@ export default function CollectionsTab() {
     <div>
       <h1 className="text-2xl font-display font-semibold mb-4">Coleções</h1>
 
-      {/* Create collection */}
+      {/* Create/Edit collection */}
       <Card className="mb-6">
         <CardBody>
+          <h2 className="text-lg font-semibold mb-3">{editingCollectionId ? 'Editar coleção' : 'Nova coleção'}</h2>
           <div className="grid gap-3 sm:grid-cols-2">
-            <input className="rounded-md border border-neutral-300 px-3 py-2" placeholder="Título" value={form.title} onChange={(e)=>setForm(f=>({...f,title:e.target.value}))} />
-            <input className="rounded-md border border-neutral-300 px-3 py-2" placeholder="Slug" value={form.slug} onChange={(e)=>setForm(f=>({...f,slug:e.target.value}))} />
-            <input className="rounded-md border border-neutral-300 px-3 py-2 sm:col-span-2" placeholder="Capa (URL)" value={form.cover} onChange={(e)=>setForm(f=>({...f,cover:e.target.value}))} />
+            <input className="rounded-md border border-neutral-300 px-3 py-2" placeholder="Título" value={form.title} onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))} />
+            <input className="rounded-md border border-neutral-300 px-3 py-2" placeholder="Slug" value={form.slug} onChange={(e) => setForm(f => ({ ...f, slug: e.target.value }))} />
+            <textarea className="rounded-md border border-neutral-300 px-3 py-2 sm:col-span-2" placeholder="Descrição" rows={3} value={form.description} onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))} />
+            <input className="rounded-md border border-neutral-300 px-3 py-2 sm:col-span-2" placeholder="Capa (URL)" value={form.cover} onChange={(e) => setForm(f => ({ ...f, cover: e.target.value }))} />
             <div className="sm:col-span-2 flex items-center gap-3">
               <label className="inline-flex items-center gap-2 rounded-md border border-neutral-300 px-3 py-2 cursor-pointer hover:bg-neutral-50">
                 <input type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} />
@@ -113,8 +142,9 @@ export default function CollectionsTab() {
               </label>
               {form.cover && <span className="text-xs text-neutral-600 truncate">{form.cover}</span>}
             </div>
-            <div className="sm:col-span-2">
-              <Button onClick={saveCollectionForm} disabled={!form.slug || !form.title}>Salvar coleção</Button>
+            <div className="sm:col-span-2 flex gap-2">
+              <Button onClick={saveCollectionForm} disabled={!form.slug || !form.title}>{editingCollectionId ? 'Atualizar' : 'Criar'}</Button>
+              {editingCollectionId && <Button variant="outline" onClick={cancelEditCollection}>Cancelar</Button>}
             </div>
           </div>
         </CardBody>
@@ -144,7 +174,8 @@ export default function CollectionsTab() {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => openEditProducts(c)}>Editar produtos</Button>
+              <Button size="sm" variant="outline" onClick={() => startEditCollection(c)}>Editar</Button>
+              <Button size="sm" variant="outline" onClick={() => openEditProducts(c)}>Produtos</Button>
               <Button size="sm" variant="danger" onClick={() => removeCollection(String(c.id))}>Remover</Button>
             </div>
           </div>
@@ -152,9 +183,9 @@ export default function CollectionsTab() {
       </div>
 
       {/* Edit products selection */}
-      {editingId && (
+      {editingProductsId && (
         <div className="mt-6 rounded-md border border-neutral-200 p-4">
-          <div className="text-sm font-medium mb-2">Editar produtos da coleção: <span className="font-semibold">{(collections.find(c=>String(c.id)===editingId)?.title) || 'Coleção'}</span></div>
+          <div className="text-sm font-medium mb-2">Editar produtos da coleção: <span className="font-semibold">{(collections.find(c => String(c.id) === editingProductsId)?.title) || 'Coleção'}</span></div>
 
           {/* Selected products list */}
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -192,7 +223,7 @@ export default function CollectionsTab() {
 
           {/* Add more button */}
           <div className="mt-3">
-            <Button variant="outline" onClick={() => setShowPicker(v=>!v)}>{showPicker ? 'Fechar seleção' : 'Adicionar mais'}</Button>
+            <Button variant="outline" onClick={() => setShowPicker(v => !v)}>{showPicker ? 'Fechar seleção' : 'Adicionar mais'}</Button>
           </div>
 
           {/* Picker for unselected products */}
@@ -218,7 +249,7 @@ export default function CollectionsTab() {
 
           <div className="mt-3 flex gap-2">
             <Button onClick={saveEditProducts}>Salvar</Button>
-            <Button variant="outline" onClick={() => { setEditingId(null); setTempIds([]); setShowPicker(false); }}>Cancelar</Button>
+            <Button variant="outline" onClick={() => { setEditingProductsId(null); setTempIds([]); setShowPicker(false); }}>Cancelar</Button>
           </div>
         </div>
       )}

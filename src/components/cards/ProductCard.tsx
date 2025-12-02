@@ -98,7 +98,7 @@ export default function ProductCard({ product, inHighlights = false, collections
                 setOpen(false);
               }}
             >
-              Editar tamanhos e cores
+              Editar produto
             </button>
             <div className="border-t" />
             <button className="w-full text-left px-3 py-2 hover:bg-neutral-50" onClick={addToHighlights}>Adicionar aos destaques</button>

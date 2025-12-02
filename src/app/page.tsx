@@ -4,9 +4,9 @@ import PageHeader from '@/components/content/PageHeader'
 import PageBody from '@/components/content/PageBody'
 import CollectionsGrid from '@/components/data/CollectionsGrid'
 import ProductsGrid from '@/components/data/ProductsGrid'
-import CreatorsGrid from '@/components/data/CreatorsGrid'
+// import CreatorsGrid from '@/components/data/CreatorsGrid'
 import HomeSections from '@/components/content/HomeSections'
-import CreatorsFeatured from '@/components/content/CreatorsFeatured'
+// import CreatorsFeatured from '@/components/content/CreatorsFeatured'
 
 export default function HomePage() {
   return (
@@ -43,7 +43,7 @@ export default function HomePage() {
       </section>
 
       {/* Creators (from Content DB -> featuredCreators) */}
-      <CreatorsFeatured dark />
+      {/* <CreatorsFeatured dark /> */} {/* Disabled for now */}
     </main>
   )
 }

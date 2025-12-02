@@ -1,12 +1,14 @@
 "use client";
 
 import { use, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Container from "@/components/ui/Container";
 import { H1, Text } from "@/components/ui/Typography";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { getFirebase, isFirebaseEnabled, listCollection, subscribeCollection } from "@/lib/firebase";
+import { useAuth } from "@/contexts/AuthContext";
 
 function slugify(s?: string) {
   return (s || "")
@@ -22,10 +24,19 @@ type FeaturedCreator = { name: string; subtitle?: string; image?: string; href?:
 
 export default function CreatorDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug: paramSlug } = use(params);
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const enabled = isFirebaseEnabled();
   const [creators, setCreators] = useState<CreatorDoc[]>([]);
   const [contentCriadores, setContentCriadores] = useState<FeaturedCreator[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Redirect non-admin users
+  useEffect(() => {
+    if (!authLoading && (!user || user.role !== "admin")) {
+      router.push("/");
+    }
+  }, [user, authLoading, router]);
 
   useEffect(() => {
     let unCreators: (() => void) | null = null;
@@ -65,16 +76,16 @@ export default function CreatorDetailPage({ params }: { params: Promise<{ slug: 
     // 1) try by exact ID match first (case-sensitive)
     const byId = creators.find(c => c.id === paramSlug);
     if (byId) return { name: byId.name, subtitle: byId.subtitle, image: byId.avatar, bio: byId.bio } as FeaturedCreator;
-    
+
     // 2) try by creators.slug
     const s = slugify(paramSlug);
     const bySlug = creators.find(c => (c.slug && slugify(c.slug) === s));
     if (bySlug) return { name: bySlug.name, subtitle: bySlug.subtitle, image: bySlug.avatar, bio: bySlug.bio } as FeaturedCreator;
-    
+
     // 3) fallback to featuredCreators by slugified name
     const byFeatured = contentCriadores.find(c => slugify(c.name) === s);
     if (byFeatured) return { name: byFeatured.name, subtitle: (byFeatured as any).role, image: (byFeatured as any).image || (byFeatured as any).avatar, href: byFeatured.href, bio: (byFeatured as any).bio } as FeaturedCreator;
-    
+
     // 4) fallback to featuredCreators by href last segment
     const byHref = contentCriadores.find(c => {
       const href: string | undefined = (c as any).href;
@@ -85,9 +96,14 @@ export default function CreatorDetailPage({ params }: { params: Promise<{ slug: 
       } catch { return false; }
     });
     if (byHref) return { name: byHref.name, subtitle: (byHref as any).role, image: (byHref as any).image || (byHref as any).avatar, href: (byHref as any).href, bio: (byHref as any).bio } as FeaturedCreator;
-    
+
     return null;
   }, [paramSlug, creators, contentCriadores]);
+
+  // Show nothing while checking auth or loading
+  if (authLoading || !user || user.role !== "admin") {
+    return null;
+  }
 
   if (loading) {
     return (

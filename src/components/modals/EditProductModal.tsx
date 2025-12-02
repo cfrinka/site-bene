@@ -33,6 +33,9 @@ type EditProductModalProps = {
 };
 
 export default function EditProductModal({ product, onClose, onSave }: EditProductModalProps) {
+  const [title, setTitle] = useState(product.title || '');
+  const [price, setPrice] = useState(String(product.price || ''));
+  const [cover, setCover] = useState(product.cover || '');
   const [sizes, setSizes] = useState<string[]>(product.sizes || []);
   const [colors, setColors] = useState<string[]>(product.colors || []);
   const [colorImages, setColorImages] = useState<Record<string, string>>(product.colorImages || {});
@@ -50,6 +53,29 @@ export default function EditProductModal({ product, onClose, onSave }: EditProdu
     setColors(prev =>
       prev.includes(colorName) ? prev.filter(c => c !== colorName) : [...prev, colorName]
     );
+  };
+
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputEl = e.currentTarget;
+    const file = inputEl.files?.[0];
+    if (!file) {
+      inputEl.value = '';
+      return;
+    }
+
+    try {
+      setUploading(true);
+      const up = await uploadFile(`products/${Date.now()}-${file.name}`, file);
+      if ((up as any).ok) {
+        setCover((up as any).url);
+        show({ variant: 'success', title: 'Imagem de capa enviada' });
+      } else {
+        show({ variant: 'error', title: 'Falha ao enviar' });
+      }
+    } finally {
+      setUploading(false);
+      if (inputEl) inputEl.value = '';
+    }
   };
 
   const handleColorImageUpload = async (colorName: string, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -76,6 +102,10 @@ export default function EditProductModal({ product, onClose, onSave }: EditProdu
   };
 
   const handleSave = async () => {
+    if (!title.trim()) {
+      show({ variant: 'warning', title: 'Título é obrigatório' });
+      return;
+    }
     if (sizes.length === 0) {
       show({ variant: 'warning', title: 'Selecione pelo menos um tamanho' });
       return;
@@ -85,9 +115,14 @@ export default function EditProductModal({ product, onClose, onSave }: EditProdu
       return;
     }
 
+    const priceValue = parseFloat(price.replace(',', '.')) || 0;
+
     setSaving(true);
     try {
       await updateDocument('products', product.id, {
+        title,
+        price: priceValue,
+        cover,
         sizes,
         colors,
         colorImages,
@@ -109,8 +144,64 @@ export default function EditProductModal({ product, onClose, onSave }: EditProdu
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-xl font-display font-semibold mb-4">
-          Editar Variantes: {product.title}
+          Editar Produto
         </h2>
+
+        {/* Basic Info */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-neutral-700 mb-2">
+            Título *
+          </label>
+          <input
+            type="text"
+            className="w-full rounded-md border border-neutral-300 px-3 py-2"
+            placeholder="Título do produto"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+        </div>
+
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-neutral-700 mb-2">
+            Preço *
+          </label>
+          <input
+            type="text"
+            inputMode="decimal"
+            className="w-full rounded-md border border-neutral-300 px-3 py-2"
+            placeholder="0.00"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+          />
+        </div>
+
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-neutral-700 mb-2">
+            Imagem de Capa
+          </label>
+          <input
+            type="text"
+            className="w-full rounded-md border border-neutral-300 px-3 py-2 mb-2"
+            placeholder="URL da imagem"
+            value={cover}
+            onChange={(e) => setCover(e.target.value)}
+          />
+          <label className="inline-flex items-center gap-2 rounded-md border border-neutral-300 px-3 py-2 cursor-pointer hover:bg-neutral-50">
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleCoverUpload}
+              disabled={uploading}
+            />
+            {uploading ? 'Enviando...' : 'Enviar nova imagem'}
+          </label>
+          {cover && (
+            <p className="text-xs text-neutral-600 mt-2 truncate">
+              {cover}
+            </p>
+          )}
+        </div>
 
         {/* Sizes */}
         <div className="mb-6">
@@ -221,9 +312,9 @@ export default function EditProductModal({ product, onClose, onSave }: EditProdu
           <Button
             variant="primary"
             onClick={handleSave}
-            disabled={saving || sizes.length === 0 || colors.length === 0}
+            disabled={saving || !title.trim() || sizes.length === 0 || colors.length === 0}
           >
-            {saving ? "Salvando..." : "Salvar"}
+            {saving ? "Salvando..." : "Salvar Alterações"}
           </Button>
         </div>
       </div>

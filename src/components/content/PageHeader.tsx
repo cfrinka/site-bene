@@ -58,7 +58,7 @@ export default function PageHeader({ page, className = "" }: { page: PageKey; cl
           <div className="absolute inset-0 bg-black/30" />
         </div>
       )}
-      <Container className="relative py-16">
+      <Container className="relative py-24 md:py-32">
         <h1 className={`text-4xl md:text-5xl font-display ${doc?.heroImage ? 'text-white' : ''}`}>{title}</h1>
         {subtitle && <p className={`mt-3 max-w-2xl ${doc?.heroImage ? 'text-white/80' : 'text-neutral-700'}`}>{subtitle}</p>}
         {doc?.ctaLabel && doc?.ctaHref && (

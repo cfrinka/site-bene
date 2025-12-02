@@ -38,8 +38,23 @@ const ALL_COLORS = [
   { name: "Amarelo", value: "#FFFF00" },
 ];
 
-export default function ProductsGrid({ limit = 6, cols = "sm:grid-cols-2 lg:grid-cols-3" }: { limit?: number; cols?: string }) {
+type Collection = { id: string; productIds?: string[] };
+
+export default function ProductsGrid({
+  limit,
+  cols = "sm:grid-cols-2 lg:grid-cols-3",
+  searchTerm = "",
+  sortOrder = "",
+  collectionId = ""
+}: {
+  limit?: number;
+  cols?: string;
+  searchTerm?: string;
+  sortOrder?: "asc" | "desc" | "price-asc" | "price-desc" | "";
+  collectionId?: string;
+}) {
   const [items, setItems] = useState<Product[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [variantModalOpen, setVariantModalOpen] = useState(false);
@@ -55,17 +70,68 @@ export default function ProductsGrid({ limit = 6, cols = "sm:grid-cols-2 lg:grid
     (async () => {
       try {
         if (enabled) {
-          const res = await listCollection("products");
-          if (!cancel && res.ok) setItems(res.items as any);
+          const [productsRes, collectionsRes] = await Promise.all([
+            listCollection("products"),
+            listCollection("collections")
+          ]);
+          if (!cancel) {
+            if (productsRes.ok) setItems(productsRes.items as any);
+            if (collectionsRes.ok) setCollections(collectionsRes.items as Collection[]);
+          }
         }
       } finally {
         if (!cancel) setLoading(false);
       }
     })();
     return () => { cancel = true; };
-  }, [enabled, limit]);
+  }, [enabled]);
 
-  const data = items.slice(0, limit);
+  // Apply filters
+  let filteredItems = [...items];
+
+  // Filter by search term
+  if (searchTerm) {
+    const search = searchTerm.toLowerCase();
+    filteredItems = filteredItems.filter(item =>
+      item.title?.toLowerCase().includes(search)
+    );
+  }
+
+  // Filter by collection
+  if (collectionId) {
+    const collection = collections.find(c => c.id === collectionId);
+    if (collection && collection.productIds) {
+      filteredItems = filteredItems.filter(item =>
+        collection.productIds!.includes(item.id || "")
+      );
+    }
+  }
+
+  // Sort
+  if (sortOrder === "asc") {
+    // Alphabetically A-Z
+    filteredItems.sort((a, b) =>
+      (a.title || "").localeCompare(b.title || "")
+    );
+  } else if (sortOrder === "desc") {
+    // Alphabetically Z-A
+    filteredItems.sort((a, b) =>
+      (b.title || "").localeCompare(a.title || "")
+    );
+  } else if (sortOrder === "price-asc") {
+    // Price: Lowest to Highest
+    filteredItems.sort((a, b) =>
+      (a.price || 0) - (b.price || 0)
+    );
+  } else if (sortOrder === "price-desc") {
+    // Price: Highest to Lowest
+    filteredItems.sort((a, b) =>
+      (b.price || 0) - (a.price || 0)
+    );
+  }
+
+  // Apply limit if specified
+  const data = limit ? filteredItems.slice(0, limit) : filteredItems;
 
   const handleAddToCart = (product: Product) => {
     if (!user) {
@@ -111,9 +177,17 @@ export default function ProductsGrid({ limit = 6, cols = "sm:grid-cols-2 lg:grid
   if (loading) {
     return (
       <div className={`grid gap-6 ${cols}`}>
-        {Array.from({ length: limit }).map((_, i) => (
+        {Array.from({ length: limit || 6 }).map((_, i) => (
           <ProductCardSkeleton key={i} />
         ))}
+      </div>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-neutral-600">Nenhum produto encontrado.</p>
       </div>
     );
   }
@@ -163,8 +237,8 @@ export default function ProductsGrid({ limit = 6, cols = "sm:grid-cols-2 lg:grid
                         onMouseEnter={() => setHoveredColors(prev => ({ ...prev, [productId]: color.name }))}
                         onMouseLeave={() => setHoveredColors(prev => ({ ...prev, [productId]: "" }))}
                         className={`w-6 h-6 rounded-full border-2 transition-all ${hoveredColor === color.name
-                            ? "border-neutral-800 scale-110"
-                            : "border-neutral-300 hover:border-neutral-500"
+                          ? "border-neutral-800 scale-110"
+                          : "border-neutral-300 hover:border-neutral-500"
                           }`}
                         style={{ backgroundColor: color.value }}
                         title={color.name}

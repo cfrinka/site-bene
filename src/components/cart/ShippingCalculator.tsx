@@ -69,8 +69,11 @@ export default function ShippingCalculator({ onShippingSelect, cartTotal, onCepC
         onCepCalculated(cep, data);
       }
 
+      // Verificar se o CEP é o de origem (frete grátis para retirada local)
+      const isLocalPickup = cep.replace(/\D/g, "") === "14680057";
+
       // Verificar se o carrinho qualifica para frete grátis
-      const hasFreeShipping = cartTotal >= FREE_SHIPPING_THRESHOLD;
+      const hasFreeShipping = cartTotal >= FREE_SHIPPING_THRESHOLD || isLocalPickup;
 
       // Simular cálculo de frete baseado na região
       // Em produção, você pode usar APIs como:
@@ -78,9 +81,9 @@ export default function ShippingCalculator({ onShippingSelect, cartTotal, onCepC
       // - Melhor Envio (https://melhorenvio.com.br/docs/api)
       // - Kangu (https://www.kangu.com.br/api)
       const state = data.uf;
-      const shippingOptions = calculateShippingOptions(state, originCep, hasFreeShipping);
+      const shippingOptions = calculateShippingOptions(state, originCep, hasFreeShipping, isLocalPickup);
       setOptions(shippingOptions);
-      
+
       // Selecionar automaticamente a opção mais barata
       if (shippingOptions.length > 0) {
         const cheapest = shippingOptions[0];
@@ -95,14 +98,14 @@ export default function ShippingCalculator({ onShippingSelect, cartTotal, onCepC
     }
   };
 
-  const calculateShippingOptions = (state: string, originCep: string, hasFreeShipping: boolean): ShippingOption[] => {
+  const calculateShippingOptions = (state: string, originCep: string, hasFreeShipping: boolean, isLocalPickup: boolean = false): ShippingOption[] => {
     // Se qualifica para frete grátis, retornar opção gratuita
     if (hasFreeShipping) {
       return [
         {
-          name: "Frete Grátis",
+          name: isLocalPickup ? "Retirada Local - Grátis" : "Frete Grátis",
           price: 0,
-          days: 5,
+          days: isLocalPickup ? 0 : 5,
         },
       ];
     }
@@ -220,17 +223,19 @@ export default function ShippingCalculator({ onShippingSelect, cartTotal, onCepC
             <button
               key={option.name}
               onClick={() => handleSelectOption(option)}
-              className={`w-full text-left p-3 rounded-md border transition-colors ${
-                selectedOption?.name === option.name
-                  ? "border-brand-primary bg-brand-primary/5"
-                  : "border-neutral-200 hover:border-neutral-300"
-              }`}
+              className={`w-full text-left p-3 rounded-md border transition-colors ${selectedOption?.name === option.name
+                ? "border-brand-primary bg-brand-primary/5"
+                : "border-neutral-200 hover:border-neutral-300"
+                }`}
             >
               <div className="flex justify-between items-center">
                 <div>
                   <div className="font-medium text-sm">{option.name}</div>
                   <Text className="text-xs">
-                    Entrega em até {option.days} {option.days === 1 ? "dia útil" : "dias úteis"}
+                    {option.days === 0
+                      ? "Disponível para retirada imediatamente"
+                      : `Entrega em até ${option.days} ${option.days === 1 ? "dia útil" : "dias úteis"}`
+                    }
                   </Text>
                 </div>
                 <div className="font-semibold">
@@ -243,7 +248,7 @@ export default function ShippingCalculator({ onShippingSelect, cartTotal, onCepC
               </div>
             </button>
           ))}
-          
+
           <div className="mt-3 pt-3 border-t border-neutral-200">
             <Text className="text-xs text-neutral-500 italic">
               * Prazo de produção: até 5 dias úteis. O prazo de entrega é contado após a produção.

@@ -39,7 +39,7 @@ export async function getFirebase(): Promise<FirebaseClients | null> {
     let authMod: any = null;
     try {
       authMod = await import("firebase/auth");
-    } catch {}
+    } catch { }
 
     const config = {
       apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -102,7 +102,7 @@ export async function subscribeCollection(
   onChange: (items: any[]) => void
 ) {
   const fb = await getFirebase();
-  if (!fb) return () => {};
+  if (!fb) return () => { };
   const { db } = fb as any;
   const { onSnapshot, collection } = await import("firebase/firestore");
   const ref = collection(db, collectionPath);
@@ -159,7 +159,7 @@ export async function onAuthState(cb: (user: any | null) => void) {
   const fb = await getFirebase();
   if (!fb || !fb.auth) {
     cb(null);
-    return () => {};
+    return () => { };
   }
   const { onAuthStateChanged } = await import("firebase/auth");
   return onAuthStateChanged(fb.auth, cb);
@@ -178,13 +178,13 @@ export async function createUserEmailPassword(email: string, password: string, d
   if (!fb || !fb.auth) return { ok: false, reason: "disabled" } as const;
   const { createUserWithEmailAndPassword, updateProfile } = await import("firebase/auth");
   const { doc, setDoc } = await import("firebase/firestore");
-  
+
   const userCredential = await createUserWithEmailAndPassword(fb.auth, email, password);
-  
+
   // Set display name if provided
   if (displayName && userCredential.user) {
     await updateProfile(userCredential.user, { displayName });
-    
+
     // Save user data to Firestore 'users' collection
     const userDoc = doc(fb.db, "users", userCredential.user.uid);
     await setDoc(userDoc, {
@@ -195,7 +195,7 @@ export async function createUserEmailPassword(email: string, password: string, d
       createdAt: new Date().toISOString(),
     });
   }
-  
+
   return { ok: true } as const;
 }
 
@@ -203,14 +203,14 @@ export async function getUserData(uid: string) {
   const fb = await getFirebase();
   if (!fb) return { ok: false, reason: "disabled" } as const;
   const { doc, getDoc } = await import("firebase/firestore");
-  
+
   const userDoc = doc(fb.db, "users", uid);
   const snapshot = await getDoc(userDoc);
-  
+
   if (snapshot.exists()) {
     return { ok: true, data: snapshot.data() } as const;
   }
-  
+
   return { ok: false, reason: "not-found" } as const;
 }
 
@@ -218,10 +218,10 @@ export async function updateUserProfilePicture(uid: string, photoURL: string) {
   const fb = await getFirebase();
   if (!fb) return { ok: false, reason: "disabled" } as const;
   const { doc, updateDoc } = await import("firebase/firestore");
-  
+
   const userDoc = doc(fb.db, "users", uid);
   await updateDoc(userDoc, { photoURL });
-  
+
   return { ok: true } as const;
 }
 
@@ -231,20 +231,23 @@ export async function createOrder(orderData: {
   total: number;
   shipping: { name: string; price: number; days: number };
   shippingAddress?: any;
+  paymentId?: string;
+  paymentStatus?: string;
+  paymentMethod?: string;
 }) {
   const fb = await getFirebase();
   if (!fb) return { ok: false, reason: "disabled" } as const;
   const { collection, addDoc, doc, getDoc, setDoc, runTransaction } = await import("firebase/firestore");
-  
+
   // Get next order number using transaction for atomicity
   const counterRef = doc(fb.db, "counters", "orders");
-  
+
   let orderNumber = 100;
-  
+
   try {
     await runTransaction(fb.db, async (transaction) => {
       const counterDoc = await transaction.get(counterRef);
-      
+
       if (!counterDoc.exists()) {
         // Initialize counter starting at 100
         orderNumber = 100;
@@ -261,7 +264,7 @@ export async function createOrder(orderData: {
     // Fallback to timestamp-based number if transaction fails
     orderNumber = 100 + Math.floor(Date.now() / 1000) % 900000;
   }
-  
+
   const ordersCollection = collection(fb.db, "orders");
   const docRef = await addDoc(ordersCollection, {
     ...orderData,
@@ -270,7 +273,7 @@ export async function createOrder(orderData: {
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   });
-  
+
   return { ok: true, orderId: docRef.id, orderNumber } as const;
 }
 
@@ -278,35 +281,35 @@ export async function getUserOrders(userId: string) {
   const fb = await getFirebase();
   if (!fb) return { ok: false, reason: "disabled" } as const;
   const { collection, query, where, getDocs, orderBy } = await import("firebase/firestore");
-  
+
   const ordersCollection = collection(fb.db, "orders");
   const q = query(
     ordersCollection,
     where("userId", "==", userId),
     orderBy("createdAt", "desc")
   );
-  
+
   const snapshot = await getDocs(q);
   const orders = snapshot.docs.map((doc: any) => ({
     id: doc.id,
     ...doc.data()
   }));
-  
+
   return { ok: true, orders } as const;
 }
 
 export async function subscribeUserOrders(userId: string, onChange: (orders: any[]) => void) {
   const fb = await getFirebase();
-  if (!fb) return () => {};
+  if (!fb) return () => { };
   const { collection, query, where, onSnapshot, orderBy } = await import("firebase/firestore");
-  
+
   const ordersCollection = collection(fb.db, "orders");
   const q = query(
     ordersCollection,
     where("userId", "==", userId),
     orderBy("createdAt", "desc")
   );
-  
+
   const unsub = onSnapshot(q,
     (snapshot: any) => {
       const orders = snapshot.docs.map((doc: any) => ({
@@ -319,7 +322,7 @@ export async function subscribeUserOrders(userId: string, onChange: (orders: any
       console.error("[FIRESTORE subscribeUserOrders error]", err);
     }
   );
-  
+
   return unsub;
 }
 
@@ -327,27 +330,27 @@ export async function getAllOrders() {
   const fb = await getFirebase();
   if (!fb) return { ok: false, reason: "disabled" } as const;
   const { collection, query, getDocs, orderBy } = await import("firebase/firestore");
-  
+
   const ordersCollection = collection(fb.db, "orders");
   const q = query(ordersCollection, orderBy("createdAt", "desc"));
-  
+
   const snapshot = await getDocs(q);
   const orders = snapshot.docs.map((doc: any) => ({
     id: doc.id,
     ...doc.data()
   }));
-  
+
   return { ok: true, orders } as const;
 }
 
 export async function subscribeAllOrders(onChange: (orders: any[]) => void) {
   const fb = await getFirebase();
-  if (!fb) return () => {};
+  if (!fb) return () => { };
   const { collection, query, onSnapshot, orderBy } = await import("firebase/firestore");
-  
+
   const ordersCollection = collection(fb.db, "orders");
   const q = query(ordersCollection, orderBy("createdAt", "desc"));
-  
+
   const unsub = onSnapshot(q,
     (snapshot: any) => {
       const orders = snapshot.docs.map((doc: any) => ({
@@ -360,7 +363,7 @@ export async function subscribeAllOrders(onChange: (orders: any[]) => void) {
       console.error("[FIRESTORE subscribeAllOrders error]", err);
     }
   );
-  
+
   return unsub;
 }
 
@@ -368,12 +371,12 @@ export async function updateOrderStatus(orderId: string, status: string) {
   const fb = await getFirebase();
   if (!fb) return { ok: false, reason: "disabled" } as const;
   const { doc, updateDoc } = await import("firebase/firestore");
-  
+
   const orderRef = doc(fb.db, "orders", orderId);
   await updateDoc(orderRef, {
     status,
     updatedAt: new Date().toISOString(),
   });
-  
+
   return { ok: true } as const;
 }

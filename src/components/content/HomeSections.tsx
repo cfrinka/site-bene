@@ -81,9 +81,9 @@ export default function HomeSections({ onlyCarousel = false, onlyBlocks = false 
                 >
                   {carousel.map((it, idx) => (
                     <div key={idx} className="w-full shrink-0">
-                      <a href={it.href || "#"} className="relative block w-full h-56 sm:h-64 lg:h-80 bg-neutral-100">
+                      <a href={it.href || "#"} className="relative block w-full aspect-[2/1] bg-neutral-100">
                         {it.image ? (
-                          <Image src={it.image} alt={"Slide " + (idx + 1)} fill className="object-cover object-center" />
+                          <Image src={it.image} alt={"Slide " + (idx + 1)} fill className="object-contain" />
                         ) : (
                           <div className="absolute inset-0 grid place-items-center text-neutral-500">Sem imagem</div>
                         )}

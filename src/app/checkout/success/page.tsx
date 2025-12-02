@@ -1,15 +1,19 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Container from "@/components/ui/Container";
 import { H1, Text } from "@/components/ui/Typography";
 import { Button } from "@/components/ui/Button";
 import { useCart } from "@/contexts/CartContext";
 
-export default function CheckoutSuccessPage() {
-    const router = useRouter();
+function SearchParamsWrapper() {
     const searchParams = useSearchParams();
+    return <SearchParamsContent searchParams={searchParams} />;
+}
+
+function SearchParamsContent({ searchParams }: { searchParams: ReturnType<typeof useSearchParams> }) {
+    const router = useRouter();
     const { clearCart } = useCart();
 
     const paymentId = searchParams.get("payment_id");
@@ -72,5 +76,13 @@ export default function CheckoutSuccessPage() {
                 </div>
             </Container>
         </main>
+    );
+}
+
+export default function CheckoutSuccessPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <SearchParamsWrapper />
+        </Suspense>
     );
 }

@@ -69,21 +69,38 @@ export async function POST(request: NextRequest) {
         }
 
         // Criar preferência no Mercado Pago
+        // Garantir que temos uma URL base válida
+        let baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+
+        // Se não houver URL base configurada, tentar obter do request
+        if (!baseUrl) {
+            const host = request.headers.get("host");
+            const protocol = request.headers.get("x-forwarded-proto") || "http";
+            baseUrl = `${protocol}://${host}`;
+        }
+
+        console.log("Creating preference with baseUrl:", baseUrl);
+
         const preference: any = {
             items: mpItems,
             back_urls: {
-                success: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/checkout/success`,
-                failure: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/checkout/failure`,
-                pending: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/checkout/pending`,
+                success: `${baseUrl}/checkout/success`,
+                failure: `${baseUrl}/checkout/failure`,
+                pending: `${baseUrl}/checkout/pending`,
             },
-            auto_return: "approved" as const,
-            external_reference: userId, // Referência para identificar o pedido
-            notification_url: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/mercadopago/webhook`,
-            metadata: {
+            auto_return: "approved",
+            external_reference: userId,
+            notification_url: `${baseUrl}/api/mercadopago/webhook`,
+            statement_descriptor: "BENE BRASIL",
+        };
+
+        // Adicionar metadata apenas se houver dados
+        if (orderData) {
+            preference.metadata = {
                 userId,
                 orderData: JSON.stringify(orderData),
-            },
-        };
+            };
+        }
 
         // Adicionar informações do pagador se disponíveis
         if (shippingAddress.name) {

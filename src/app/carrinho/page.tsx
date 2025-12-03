@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
 import ShippingCalculator from "@/components/cart/ShippingCalculator";
 import VariantSelector from "@/components/product/VariantSelector";
-import { listCollection, createOrder } from "@/lib/firebase";
+import { listCollection, createOrder, getUserData, subscribeUserOrders } from "@/lib/firebase";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -33,12 +33,80 @@ export default function CarrinhoPage() {
     phone: "",
   });
   const [loadingCep, setLoadingCep] = useState(false);
+  const [hasLoadedUserData, setHasLoadedUserData] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
       router.push("/");
     }
   }, [user, authLoading, router]);
+
+  // Carregar dados do usuário e último pedido para preencher automaticamente
+  useEffect(() => {
+    if (!user || hasLoadedUserData) return;
+
+    const loadUserDataAndLastOrder = async () => {
+      try {
+        // Buscar dados do usuário
+        const userData = await getUserData(user.uid);
+        let userName = "";
+
+        if ((userData as any).ok) {
+          userName = (userData as any).data.name || user.displayName || "";
+        } else {
+          userName = user.displayName || "";
+        }
+
+        // Buscar último pedido com endereço
+        const unsubscribe = await subscribeUserOrders(user.uid, (orders) => {
+          if (orders.length > 0) {
+            // Pegar o pedido mais recente que tenha endereço
+            const lastOrderWithAddress = orders
+              .filter(order => order.shippingAddress)
+              .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+
+            if (lastOrderWithAddress?.shippingAddress) {
+              const lastAddress = lastOrderWithAddress.shippingAddress;
+              setShippingAddress(prev => ({
+                name: userName || lastAddress.name || "",
+                street: prev.street || lastAddress.street || "",
+                number: prev.number || lastAddress.number || "",
+                complement: prev.complement || lastAddress.complement || "",
+                neighborhood: prev.neighborhood || lastAddress.neighborhood || "",
+                city: prev.city || lastAddress.city || "",
+                state: prev.state || lastAddress.state || "",
+                zipCode: prev.zipCode || lastAddress.zipCode || "",
+                phone: lastAddress.phone || "",
+              }));
+            } else {
+              // Se não houver pedido anterior, apenas preencher o nome
+              setShippingAddress(prev => ({
+                ...prev,
+                name: userName,
+              }));
+            }
+          } else {
+            // Se não houver pedidos, apenas preencher o nome
+            setShippingAddress(prev => ({
+              ...prev,
+              name: userName,
+            }));
+          }
+          setHasLoadedUserData(true);
+        });
+
+        // Cleanup
+        return () => {
+          if (unsubscribe) unsubscribe();
+        };
+      } catch (error) {
+        console.error("Erro ao carregar dados do usuário:", error);
+        setHasLoadedUserData(true);
+      }
+    };
+
+    loadUserDataAndLastOrder();
+  }, [user, hasLoadedUserData]);
 
   const handleCepChange = async (cep: string) => {
     const cleanCep = cep.replace(/\D/g, "");
@@ -74,10 +142,11 @@ export default function CarrinhoPage() {
     setShippingAddress(prev => ({
       ...prev,
       zipCode: cep,
-      street: addressData.logradouro || "",
-      neighborhood: addressData.bairro || "",
-      city: addressData.localidade || "",
-      state: addressData.uf || "",
+      // Preencher apenas se estiver vazio, para não sobrescrever dados já carregados
+      street: prev.street || addressData.logradouro || "",
+      neighborhood: prev.neighborhood || addressData.bairro || "",
+      city: prev.city || addressData.localidade || "",
+      state: prev.state || addressData.uf || "",
     }));
   };
 

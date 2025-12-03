@@ -5,6 +5,28 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         const { items, shipping, shippingAddress, userId, orderData } = body;
 
+        // Validar dados obrigatórios
+        if (!items || !Array.isArray(items) || items.length === 0) {
+            return NextResponse.json(
+                { error: "Items são obrigatórios" },
+                { status: 400 }
+            );
+        }
+
+        if (!shippingAddress || !shippingAddress.name || !shippingAddress.phone) {
+            return NextResponse.json(
+                { error: "Endereço de entrega incompleto" },
+                { status: 400 }
+            );
+        }
+
+        if (!userId) {
+            return NextResponse.json(
+                { error: "Usuário não identificado" },
+                { status: 400 }
+            );
+        }
+
         // Mercado Pago Access Token - deve ser configurado nas variáveis de ambiente
         const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
 
@@ -16,12 +38,25 @@ export async function POST(request: NextRequest) {
         }
 
         // Preparar itens para o Mercado Pago
-        const mpItems = items.map((item: any) => ({
-            title: `${item.title}${item.size ? ` - ${item.size}` : ""}${item.color ? ` - ${item.color}` : ""}`,
-            quantity: item.quantity,
-            unit_price: item.price,
-            currency_id: "BRL",
-        }));
+        const mpItems = items.map((item: any) => {
+            // Validar campos obrigatórios do item
+            if (!item.title || !item.quantity || !item.price) {
+                throw new Error("Item com dados incompletos");
+            }
+
+            // Garantir que o preço seja um número válido e positivo
+            const unitPrice = parseFloat(item.price.toString());
+            if (isNaN(unitPrice) || unitPrice <= 0) {
+                throw new Error(`Preço inválido para o item: ${item.title}`);
+            }
+
+            return {
+                title: `${item.title}${item.size ? ` - ${item.size}` : ""}${item.color ? ` - ${item.color}` : ""}`,
+                quantity: parseInt(item.quantity.toString()),
+                unit_price: unitPrice,
+                currency_id: "BRL",
+            };
+        });
 
         // Adicionar frete como item separado se houver custo
         if (shipping && shipping.price > 0) {
@@ -34,19 +69,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Criar preferência no Mercado Pago
-        const preference = {
+        const preference: any = {
             items: mpItems,
-            payer: {
-                name: shippingAddress.name,
-                phone: {
-                    number: shippingAddress.phone,
-                },
-                address: {
-                    street_name: shippingAddress.street,
-                    street_number: shippingAddress.number,
-                    zip_code: shippingAddress.zipCode,
-                },
-            },
             back_urls: {
                 success: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/checkout/success`,
                 failure: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/checkout/failure`,
@@ -61,6 +85,39 @@ export async function POST(request: NextRequest) {
             },
         };
 
+        // Adicionar informações do pagador se disponíveis
+        if (shippingAddress.name) {
+            preference.payer = {
+                name: shippingAddress.name,
+            };
+
+            // Adicionar telefone se disponível
+            if (shippingAddress.phone) {
+                const phoneNumber = shippingAddress.phone.replace(/\D/g, "");
+                if (phoneNumber.length >= 10) {
+                    preference.payer.phone = {
+                        area_code: phoneNumber.substring(0, 2),
+                        number: phoneNumber.substring(2),
+                    };
+                }
+            }
+
+            // Adicionar endereço se disponível
+            if (shippingAddress.street && shippingAddress.zipCode) {
+                preference.payer.address = {
+                    zip_code: shippingAddress.zipCode.replace(/\D/g, ""),
+                };
+
+                if (shippingAddress.street) {
+                    preference.payer.address.street_name = shippingAddress.street;
+                }
+
+                if (shippingAddress.number) {
+                    preference.payer.address.street_number = parseInt(shippingAddress.number.toString()) || 0;
+                }
+            }
+        }
+
         // Fazer requisição para API do Mercado Pago
         const response = await fetch("https://api.mercadopago.com/checkout/preferences", {
             method: "POST",
@@ -74,9 +131,17 @@ export async function POST(request: NextRequest) {
         const data = await response.json();
 
         if (!response.ok) {
-            console.error("Erro ao criar preferência:", data);
+            console.error("Erro ao criar preferência no Mercado Pago:", {
+                status: response.status,
+                data,
+                sentPreference: preference,
+            });
             return NextResponse.json(
-                { error: "Erro ao criar preferência de pagamento" },
+                {
+                    error: "Erro ao criar preferência de pagamento",
+                    details: data.message || data.error || "Erro desconhecido",
+                    cause: data.cause || [],
+                },
                 { status: response.status }
             );
         }
@@ -89,7 +154,10 @@ export async function POST(request: NextRequest) {
     } catch (error) {
         console.error("Erro na API de preferência:", error);
         return NextResponse.json(
-            { error: "Erro interno do servidor" },
+            {
+                error: "Erro interno do servidor",
+                details: error instanceof Error ? error.message : "Erro desconhecido"
+            },
             { status: 500 }
         );
     }

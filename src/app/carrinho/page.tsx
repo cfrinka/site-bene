@@ -137,7 +137,11 @@ export default function CarrinhoPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Erro ao criar preferência de pagamento");
+        console.error("Erro na resposta da API:", data);
+        const errorMessage = data.details
+          ? `${data.error}: ${data.details}`
+          : data.error || "Erro ao criar preferência de pagamento";
+        throw new Error(errorMessage);
       }
 
       // Redirecionar para o checkout do Mercado Pago
@@ -145,6 +149,10 @@ export default function CarrinhoPage() {
       const checkoutUrl = process.env.NODE_ENV === "production"
         ? data.initPoint
         : (data.sandboxInitPoint || data.initPoint);
+
+      if (!checkoutUrl) {
+        throw new Error("URL de checkout não foi retornada");
+      }
 
       window.location.href = checkoutUrl;
     } catch (error) {

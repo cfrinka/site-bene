@@ -6,6 +6,7 @@ import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { isFirebaseEnabled, getFirebase, subscribeCollection, listCollection, saveDocument, updateDocument, uploadFile, deleteDocument } from "@/lib/firebase";
+import { compressImage } from "@/lib/imageCompression";
 
 export type Creator = { id: string; name?: string; slug?: string; avatar?: string; subtitle?: string; bio?: string };
 
@@ -48,7 +49,9 @@ export default function CreatorsTab() {
     if (!enabled) { show({ variant: 'warning', title: 'Firebase desativado' }); inputEl.value = ''; return; }
     try {
       setUploading(true);
-      const up = await uploadFile(`creators/avatars/${Date.now()}-${file.name}`, file);
+      // Compress image to max 1MB
+      const compressedFile = await compressImage(file, 1, 1920);
+      const up = await uploadFile(`creators/avatars/${Date.now()}-${file.name}`, compressedFile);
       if ((up as any).ok) {
         if (target === 'form') setForm(f => ({ ...f, avatar: (up as any).url }));
         else setEdit(f => ({ ...f, avatar: (up as any).url }));
@@ -96,13 +99,13 @@ export default function CreatorsTab() {
       <Card className="mb-6">
         <CardBody>
           <div className="grid gap-3 sm:grid-cols-2">
-            <input className="rounded-md border border-neutral-300 px-3 py-2" placeholder="Nome" value={form.name || ''} onChange={(e)=>setForm(f=>({...f, name: e.target.value}))} />
-            <input className="rounded-md border border-neutral-300 px-3 py-2" placeholder="Slug (opcional)" value={form.slug || ''} onChange={(e)=>setForm(f=>({...f, slug: e.target.value}))} />
-            <input className="rounded-md border border-neutral-300 px-3 py-2 sm:col-span-2" placeholder="Subtítulo" value={form.subtitle || ''} onChange={(e)=>setForm(f=>({...f, subtitle: e.target.value}))} />
-            <textarea className="rounded-md border border-neutral-300 px-3 py-2 sm:col-span-2" placeholder="Sobre o criador" value={form.bio || ''} onChange={(e)=>setForm(f=>({...f, bio: e.target.value}))} />
+            <input className="rounded-md border border-neutral-300 px-3 py-2" placeholder="Nome" value={form.name || ''} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} />
+            <input className="rounded-md border border-neutral-300 px-3 py-2" placeholder="Slug (opcional)" value={form.slug || ''} onChange={(e) => setForm(f => ({ ...f, slug: e.target.value }))} />
+            <input className="rounded-md border border-neutral-300 px-3 py-2 sm:col-span-2" placeholder="Subtítulo" value={form.subtitle || ''} onChange={(e) => setForm(f => ({ ...f, subtitle: e.target.value }))} />
+            <textarea className="rounded-md border border-neutral-300 px-3 py-2 sm:col-span-2" placeholder="Sobre o criador" value={form.bio || ''} onChange={(e) => setForm(f => ({ ...f, bio: e.target.value }))} />
             <div className="sm:col-span-2 flex items-center gap-3">
               <label className="inline-flex items-center gap-2 rounded-md border border-neutral-300 px-3 py-2 cursor-pointer hover:bg-neutral-50">
-                <input type="file" accept="image/*" className="hidden" onChange={(e)=>handleAvatarUpload(e,'form')} />
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => handleAvatarUpload(e, 'form')} />
                 {uploading ? 'Enviando...' : 'Enviar avatar'}
               </label>
               {form.avatar && <span className="text-xs text-neutral-600 truncate">{form.avatar}</span>}
@@ -134,27 +137,27 @@ export default function CreatorsTab() {
                 <div className="text-xs text-neutral-600 truncate">{c.subtitle || 'Subtítulo'}</div>
               </div>
               <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline" onClick={()=>startEdit(c)}>Editar</Button>
-                <Button size="sm" variant="danger" onClick={()=>removeCreator(c.id)}>Remover</Button>
+                <Button size="sm" variant="outline" onClick={() => startEdit(c)}>Editar</Button>
+                <Button size="sm" variant="danger" onClick={() => removeCreator(c.id)}>Remover</Button>
               </div>
             </div>
 
             {editingId === c.id && (
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                <input className="rounded-md border border-neutral-300 px-3 py-2" placeholder="Nome" value={edit.name || ''} onChange={(e)=>setEdit(f=>({...f, name: e.target.value}))} />
-                <input className="rounded-md border border-neutral-300 px-3 py-2" placeholder="Slug" value={edit.slug || ''} onChange={(e)=>setEdit(f=>({...f, slug: e.target.value}))} />
-                <input className="rounded-md border border-neutral-300 px-3 py-2 sm:col-span-2" placeholder="Subtítulo" value={edit.subtitle || ''} onChange={(e)=>setEdit(f=>({...f, subtitle: e.target.value}))} />
-                <textarea className="rounded-md border border-neutral-300 px-3 py-2 sm:col-span-2" placeholder="Sobre o criador" value={edit.bio || ''} onChange={(e)=>setEdit(f=>({...f, bio: e.target.value}))} />
+                <input className="rounded-md border border-neutral-300 px-3 py-2" placeholder="Nome" value={edit.name || ''} onChange={(e) => setEdit(f => ({ ...f, name: e.target.value }))} />
+                <input className="rounded-md border border-neutral-300 px-3 py-2" placeholder="Slug" value={edit.slug || ''} onChange={(e) => setEdit(f => ({ ...f, slug: e.target.value }))} />
+                <input className="rounded-md border border-neutral-300 px-3 py-2 sm:col-span-2" placeholder="Subtítulo" value={edit.subtitle || ''} onChange={(e) => setEdit(f => ({ ...f, subtitle: e.target.value }))} />
+                <textarea className="rounded-md border border-neutral-300 px-3 py-2 sm:col-span-2" placeholder="Sobre o criador" value={edit.bio || ''} onChange={(e) => setEdit(f => ({ ...f, bio: e.target.value }))} />
                 <div className="sm:col-span-2 flex items-center gap-3">
                   <label className="inline-flex items-center gap-2 rounded-md border border-neutral-300 px-3 py-2 cursor-pointer hover:bg-neutral-50">
-                    <input type="file" accept="image/*" className="hidden" onChange={(e)=>handleAvatarUpload(e,'edit')} />
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleAvatarUpload(e, 'edit')} />
                     {uploading ? 'Enviando...' : 'Trocar avatar'}
                   </label>
                   {edit.avatar && <span className="text-xs text-neutral-600 truncate">{edit.avatar}</span>}
                 </div>
                 <div className="sm:col-span-2 flex gap-2">
                   <Button onClick={saveEdit}>Salvar</Button>
-                  <Button variant="outline" onClick={()=>{ setEditingId(null); setEdit({}); }}>Cancelar</Button>
+                  <Button variant="outline" onClick={() => { setEditingId(null); setEdit({}); }}>Cancelar</Button>
                 </div>
               </div>
             )}

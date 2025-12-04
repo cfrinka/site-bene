@@ -6,6 +6,7 @@ import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { isFirebaseEnabled, getFirebase, subscribeCollection, listCollection, saveDocument, updateDocument, uploadFile } from "@/lib/firebase";
+import { compressImage } from "@/lib/imageCompression";
 
 type PageKey = "home" | "criadores" | "sobre";
 
@@ -105,7 +106,9 @@ const ContentTab = forwardRef<ContentTabHandle, {}>(function ContentTab(_props, 
     if (!enabled) { show({ variant: 'warning', title: 'Firebase desativado' }); inputEl.value = ''; return; }
     try {
       setUploading(true);
-      const up = await uploadFile(`content/${active}/hero-${Date.now()}-${file.name}`, file);
+      // Compress image to max 1MB
+      const compressedFile = await compressImage(file, 1, 1920);
+      const up = await uploadFile(`content/${active}/hero-${Date.now()}-${file.name}`, compressedFile);
       if ((up as any).ok) { setField("heroImage", (up as any).url as string); show({ variant: 'success', title: 'Imagem enviada' }); }
       else { show({ variant: 'error', title: 'Falha ao enviar' }); }
     } finally {
@@ -265,7 +268,7 @@ const ContentTab = forwardRef<ContentTabHandle, {}>(function ContentTab(_props, 
                           <label className="inline-flex items-center gap-2 rounded-md border border-neutral-300 px-3 py-1.5 cursor-pointer hover:bg-neutral-50">
                             <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
                               const inputEl = e.currentTarget;
-                              const file = inputEl.files?.[0]; 
+                              const file = inputEl.files?.[0];
                               if (!file) { inputEl.value = ''; return; }
                               if (!enabled) { show({ variant: 'warning', title: 'Firebase desativado' }); inputEl.value = ''; return; }
                               const up = await uploadFile(`content/home/blocks/${Date.now()}-${file.name}`, file);

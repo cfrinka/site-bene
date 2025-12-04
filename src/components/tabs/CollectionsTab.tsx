@@ -6,6 +6,7 @@ import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { isFirebaseEnabled, getFirebase, subscribeCollection, listCollection, saveDocument, uploadFile, existsByField, updateDocument, deleteDocument } from "@/lib/firebase";
+import { compressImage } from "@/lib/imageCompression";
 
 type Product = { id: string; title?: string; price?: number; cover?: string };
 type Collection = { id?: string; title?: string; slug?: string; description?: string; cover?: string; productIds?: string[] };
@@ -57,7 +58,9 @@ export default function CollectionsTab() {
     if (!enabled) { show({ variant: 'warning', title: 'Firebase desativado' }); inputEl.value = ''; return; }
     try {
       setUploading(true);
-      const up = await uploadFile(`collections/covers/${Date.now()}-${file.name}`, file);
+      // Compress image to max 1MB
+      const compressedFile = await compressImage(file, 1, 1920);
+      const up = await uploadFile(`collections/covers/${Date.now()}-${file.name}`, compressedFile);
       if ((up as any).ok) { setForm(f => ({ ...f, cover: (up as any).url })); show({ variant: 'success', title: 'Capa enviada' }); }
       else { show({ variant: 'error', title: 'Falha ao enviar' }); }
     } finally {

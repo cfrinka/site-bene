@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { isFirebaseEnabled, subscribeCollection, listCollection, getFirebase, saveDocument, uploadFile } from "@/lib/firebase";
+import { compressImage } from '@/lib/imageCompression';
 import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
@@ -130,7 +131,9 @@ export default function ProductsTab() {
     if (!enabled) { show({ variant: 'warning', title: 'Firebase desativado' }); inputEl.value = ''; return; }
     try {
       setUploading(true);
-      const up = await uploadFile(`products/${Date.now()}-${file.name}`, file);
+      // Compress image to max 1MB
+      const compressedFile = await compressImage(file, 1, 1920);
+      const up = await uploadFile(`products/${Date.now()}-${file.name}`, compressedFile);
       if ((up as any).ok) {
         setForm((f) => ({ ...f, cover: (up as any).url }));
         show({ variant: 'success', title: 'Imagem enviada' });
@@ -150,7 +153,9 @@ export default function ProductsTab() {
     if (!enabled) { show({ variant: 'warning', title: 'Firebase desativado' }); inputEl.value = ''; return; }
     try {
       setUploading(true);
-      const up = await uploadFile(`products/${Date.now()}-${colorName}-${file.name}`, file);
+      // Compress image to max 1MB
+      const compressedFile = await compressImage(file, 1, 1920);
+      const up = await uploadFile(`products/${Date.now()}-${colorName}-${file.name}`, compressedFile);
       if ((up as any).ok) {
         setForm((f) => ({ ...f, colorImages: { ...f.colorImages, [colorName]: (up as any).url } }));
         show({ variant: 'success', title: `Imagem da cor ${colorName} enviada` });

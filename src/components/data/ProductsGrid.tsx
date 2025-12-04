@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import AuthModal from "@/components/ui/AuthModal";
 import VariantSelector from "@/components/product/VariantSelector";
+import ProductModal from "@/components/modals/ProductModal";
 
 function picsum(seed: string, w: number, h: number) {
   return `https://picsum.photos/seed/${encodeURIComponent(seed)}/${w}/${h}`;
@@ -58,7 +59,9 @@ export default function ProductsGrid({
   const [loading, setLoading] = useState(true);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [variantModalOpen, setVariantModalOpen] = useState(false);
+  const [productModalOpen, setProductModalOpen] = useState(false);
   const [pendingProduct, setPendingProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [hoveredColors, setHoveredColors] = useState<Record<string, string>>({});
   const enabled = isFirebaseEnabled();
   const { user } = useAuth();
@@ -208,13 +211,30 @@ export default function ProductsGrid({
 
         return (
           <Card key={productId} className="overflow-hidden">
-            <div className="relative h-56 bg-neutral-100">
-              <Image
-                src={displayImage}
-                alt={p.title ?? "Produto"}
-                fill
-                className="object-cover transition-opacity duration-300"
-              />
+            <div
+              className="relative h-56 bg-neutral-100 cursor-pointer"
+              onClick={() => {
+                setSelectedProduct(p);
+                setProductModalOpen(true);
+              }}
+            >
+              {displayImage ? (
+                <Image
+                  src={displayImage}
+                  alt={p.title ?? "Produto"}
+                  fill
+                  className="object-cover transition-opacity duration-300"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  loading="lazy"
+                  placeholder="blur"
+                  blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2YzZjRmNiIvPjwvc3ZnPg=="
+                  unoptimized={displayImage?.includes('firebasestorage.googleapis.com')}
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center text-neutral-400 text-sm">
+                  Sem imagem
+                </div>
+              )}
               {p.badge && (
                 <div className="absolute left-3 top-3">
                   <Badge className="bg-brand-accent text-white">{p.badge}</Badge>
@@ -273,6 +293,18 @@ export default function ProductsGrid({
             setVariantModalOpen(false);
             setPendingProduct(null);
           }}
+        />
+      )}
+
+      {productModalOpen && selectedProduct && (
+        <ProductModal
+          product={selectedProduct}
+          isOpen={productModalOpen}
+          onClose={() => {
+            setProductModalOpen(false);
+            setSelectedProduct(null);
+          }}
+          onAddToCart={handleAddToCart}
         />
       )}
     </div>

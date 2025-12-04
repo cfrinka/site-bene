@@ -37,7 +37,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
     } catch (err: any) {
       // Map Firebase error codes to user-friendly messages
       const errorMessage = err.message || err.code || "Ocorreu um erro";
-      
+
       if (errorMessage.includes("email-already-in-use") || errorMessage.includes("auth/email-already-in-use")) {
         setError("Este e-mail já está cadastrado. Tente fazer login ou use outro e-mail.");
       } else if (errorMessage.includes("invalid-email") || errorMessage.includes("auth/invalid-email")) {
@@ -67,7 +67,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
           <h2 className="text-2xl font-display font-bold">
             {mode === "login" ? "Entrar" : "Criar conta"}
           </h2>
-          <button onClick={onClose} className="text-neutral-500 hover:text-neutral-700">
+          <button onClick={onClose} className="text-neutral-500 hover:text-neutral-700 cursor-pointer">
             ✕
           </button>
         </div>

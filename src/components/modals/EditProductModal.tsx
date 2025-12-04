@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { updateDocument, uploadFile } from "@/lib/firebase";
+import { compressImage } from "@/lib/imageCompression";
 import { useToast } from "@/components/ui/Toast";
 
 const AVAILABLE_SIZES = ["P", "M", "G", "GG", "G1"];
@@ -65,7 +66,9 @@ export default function EditProductModal({ product, onClose, onSave }: EditProdu
 
     try {
       setUploading(true);
-      const up = await uploadFile(`products/${Date.now()}-${file.name}`, file);
+      // Compress image to max 1MB
+      const compressedFile = await compressImage(file, 1, 1920);
+      const up = await uploadFile(`products/${Date.now()}-${file.name}`, compressedFile);
       if ((up as any).ok) {
         setCover((up as any).url);
         show({ variant: 'success', title: 'Imagem de capa enviada' });
@@ -88,7 +91,9 @@ export default function EditProductModal({ product, onClose, onSave }: EditProdu
 
     try {
       setUploading(true);
-      const up = await uploadFile(`products/${Date.now()}-${colorName}-${file.name}`, file);
+      // Compress image to max 1MB
+      const compressedFile = await compressImage(file, 1, 1920);
+      const up = await uploadFile(`products/${Date.now()}-${colorName}-${file.name}`, compressedFile);
       if ((up as any).ok) {
         setColorImages(prev => ({ ...prev, [colorName]: (up as any).url }));
         show({ variant: 'success', title: `Imagem da cor ${colorName} enviada` });

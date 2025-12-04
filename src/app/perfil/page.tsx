@@ -8,6 +8,7 @@ import { H1, H2, Text } from "@/components/ui/Typography";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
 import { uploadFile, updateUserProfilePicture, getUserData, subscribeUserOrders } from "@/lib/firebase";
+import { compressImage } from "@/lib/imageCompression";
 import Image from "next/image";
 
 export default function PerfilPage() {
@@ -33,9 +34,9 @@ export default function PerfilPage() {
   // Subscribe to real-time order updates
   useEffect(() => {
     if (!user) return;
-    
+
     let unsubscribe: (() => void) | null = null;
-    
+
     setLoadingOrders(true);
     subscribeUserOrders(user.uid, (orders) => {
       setOrders(orders);
@@ -53,7 +54,7 @@ export default function PerfilPage() {
 
   const loadUserData = async () => {
     if (!user) return;
-    
+
     try {
       const userData = await getUserData(user.uid);
       if ((userData as any).ok && (userData as any).data.photoURL) {
@@ -70,14 +71,18 @@ export default function PerfilPage() {
 
     try {
       setUploading(true);
-      const result = await uploadFile(`users/${user.uid}/profile-${Date.now()}.jpg`, file);
-      
+
+      // Compress image to max 1MB
+      const compressedFile = await compressImage(file, 1, 1920);
+
+      const result = await uploadFile(`users/${user.uid}/profile-${Date.now()}.jpg`, compressedFile);
+
       if ((result as any).ok) {
         const photoURL = (result as any).url;
-        
+
         // Save profile picture URL to Firestore
         await updateUserProfilePicture(user.uid, photoURL);
-        
+
         setProfilePicture(photoURL);
         alert("Foto de perfil atualizada!");
       } else {
@@ -193,20 +198,19 @@ export default function PerfilPage() {
                                 {new Date(order.createdAt).toLocaleDateString('pt-BR')}
                               </Text>
                             </div>
-                            <span className={`px-2 py-1 text-xs rounded ${
-                              order.status === 'delivered' ? 'bg-green-100 text-green-800' :
-                              order.status === 'shipped' ? 'bg-purple-100 text-purple-800' :
-                              order.status === 'processing' ? 'bg-blue-100 text-blue-800' :
-                              order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                              order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-neutral-100 text-neutral-800'
-                            }`}>
+                            <span className={`px-2 py-1 text-xs rounded ${order.status === 'delivered' ? 'bg-green-100 text-green-800' :
+                                order.status === 'shipped' ? 'bg-purple-100 text-purple-800' :
+                                  order.status === 'processing' ? 'bg-blue-100 text-blue-800' :
+                                    order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                      order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                        'bg-neutral-100 text-neutral-800'
+                              }`}>
                               {order.status === 'delivered' ? 'Entregue' :
-                               order.status === 'shipped' ? 'Enviado' :
-                               order.status === 'processing' ? 'Em processamento' :
-                               order.status === 'cancelled' ? 'Cancelado' :
-                               order.status === 'pending' ? 'Pendente' :
-                               order.status || 'Pendente'}
+                                order.status === 'shipped' ? 'Enviado' :
+                                  order.status === 'processing' ? 'Em processamento' :
+                                    order.status === 'cancelled' ? 'Cancelado' :
+                                      order.status === 'pending' ? 'Pendente' :
+                                        order.status || 'Pendente'}
                             </span>
                           </div>
                           <div className="space-y-1">

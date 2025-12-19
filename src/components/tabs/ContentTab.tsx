@@ -240,7 +240,8 @@ const ContentTab = forwardRef<ContentTabHandle, {}>(function ContentTab(_props, 
                               const inputEl = e.currentTarget;
                               const file = inputEl.files?.[0]; if (!file) { inputEl.value = ''; return; }
                               if (!enabled) { show({ variant: 'warning', title: 'Firebase desativado' }); inputEl.value = ''; return; }
-                              const up = await uploadFile(`content/home/carousel/${Date.now()}-${file.name}`, file);
+                              const compressedFile = await compressImage(file, 1, 1920);
+                              const up = await uploadFile(`content/home/carousel/${Date.now()}-${file.name}`, compressedFile);
                               if ((up as any).ok) { const arr = [...(current.carouselItems || [])]; arr[idx] = { ...arr[idx], image: (up as any).url }; setField('carouselItems', arr); show({ variant: 'success', title: 'Imagem enviada' }); }
                               inputEl.value = '';
                             }} />
@@ -271,9 +272,13 @@ const ContentTab = forwardRef<ContentTabHandle, {}>(function ContentTab(_props, 
                               const file = inputEl.files?.[0];
                               if (!file) { inputEl.value = ''; return; }
                               if (!enabled) { show({ variant: 'warning', title: 'Firebase desativado' }); inputEl.value = ''; return; }
-                              const up = await uploadFile(`content/home/blocks/${Date.now()}-${file.name}`, file);
-                              if ((up as any).ok) { const arr = [...(current.featuredBlocks || [])]; arr[idx] = { ...arr[idx], image: (up as any).url }; setField('featuredBlocks', arr); show({ variant: 'success', title: 'Imagem enviada' }); }
-                              inputEl.value = '';
+                              try {
+                                setUploading(true);
+                                const compressedFile = await compressImage(file, 1, 1920);
+                                const up = await uploadFile(`content/home/blocks/${Date.now()}-${file.name}`, compressedFile);
+                                if ((up as any).ok) { const arr = [...(current.featuredBlocks || [])]; arr[idx] = { ...arr[idx], image: (up as any).url }; setField('featuredBlocks', arr); show({ variant: 'success', title: 'Imagem enviada' }); }
+                                else { show({ variant: 'error', title: 'Falha ao enviar' }); }
+                              } finally { setUploading(false); inputEl.value = ''; }
                             }} />
                             Trocar imagem
                           </label>
@@ -303,7 +308,8 @@ const ContentTab = forwardRef<ContentTabHandle, {}>(function ContentTab(_props, 
                         if (!enabled) { show({ variant: 'warning', title: 'Firebase desativado' }); inputEl.value = ''; return; }
                         try {
                           setUploading(true);
-                          const up = await uploadFile(`creators/avatars/${Date.now()}-${file.name}`, file);
+                          const compressedFile = await compressImage(file, 1, 1920);
+                          const up = await uploadFile(`creators/avatars/${Date.now()}-${file.name}`, compressedFile);
                           if ((up as any).ok) { setNewCreator(v => ({ ...v, avatar: (up as any).url })); show({ variant: 'success', title: 'Imagem enviada' }); }
                           else { show({ variant: 'error', title: 'Falha ao enviar' }); }
                         } finally { setUploading(false); inputEl.value = ''; }
@@ -354,12 +360,14 @@ const ContentTab = forwardRef<ContentTabHandle, {}>(function ContentTab(_props, 
                             const inputEl = e.currentTarget;
                             const file = inputEl.files?.[0]; if (!file) { inputEl.value = ''; return; }
                             if (!enabled) { show({ variant: 'warning', title: 'Firebase desativado' }); inputEl.value = ''; return; }
-                            const up = await uploadFile(`content/criadores/featured/${Date.now()}-${file.name}`, file);
+                            const compressedFile = await compressImage(file, 1, 1920);
+                            const up = await uploadFile(`content/criadores/featured/${Date.now()}-${file.name}`, compressedFile);
                             if ((up as any).ok) { const arr = [...(current.featuredCreators || [])]; arr[idx] = { ...arr[idx], image: (up as any).url }; setField('featuredCreators', arr); show({ variant: 'success', title: 'Imagem enviada' }); }
                             inputEl.value = '';
                           }} />
                           Trocar imagem
                         </label>
+
                         <Button variant="danger" onClick={() => { const arr = [...(current.featuredCreators || [])]; arr.splice(idx, 1); setField('featuredCreators', arr); }}>Remover</Button>
                       </div>
                     </div>

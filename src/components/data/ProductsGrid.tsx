@@ -14,10 +14,6 @@ import AuthModal from "@/components/ui/AuthModal";
 import VariantSelector from "@/components/product/VariantSelector";
 import ProductModal from "@/components/modals/ProductModal";
 
-function picsum(seed: string, w: number, h: number) {
-  return `https://picsum.photos/seed/${encodeURIComponent(seed)}/${w}/${h}`;
-}
-
 type Product = {
   id?: string;
   title?: string;
@@ -202,7 +198,7 @@ export default function ProductsGrid({
         const hoveredColor = hoveredColors[productId];
         const displayImage = hoveredColor && p.colorImages?.[hoveredColor]
           ? p.colorImages[hoveredColor]
-          : p.cover ?? picsum(`prod-${i}`, 800, 800);
+          : p.cover;
 
         // Get available colors with their hex values
         const availableColors = p.colors

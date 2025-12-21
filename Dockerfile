@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM node:18-alpine AS deps
+FROM node:20-alpine AS deps
 WORKDIR /app
 
 # Install libc compatibility for some native deps
@@ -9,7 +9,7 @@ RUN apk add --no-cache libc6-compat
 COPY package.json package-lock.json ./
 RUN npm ci
 
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 WORKDIR /app
 
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -19,7 +19,7 @@ COPY . .
 
 RUN npm run build
 
-FROM node:18-alpine AS runner
+FROM node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production

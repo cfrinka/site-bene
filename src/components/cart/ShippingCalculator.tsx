@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { Text } from "@/components/ui/Typography";
 
@@ -39,6 +39,17 @@ export default function ShippingCalculator({ onShippingSelect, cartTotal, onCepC
       onShippingSelect(null);
     }
   };
+
+  // Auto-trigger calculation when CEP is complete
+  useEffect(() => {
+    if (cep.replace(/\D/g, "").length === 8) {
+      const timer = setTimeout(() => {
+        calculateShipping();
+      }, 500); // 500ms debounce
+
+      return () => clearTimeout(timer);
+    }
+  }, [cep]);
 
   const calculateShipping = async () => {
     if (cep.replace(/\D/g, "").length !== 8) {

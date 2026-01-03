@@ -83,16 +83,25 @@ export async function POST(request: NextRequest) {
 
         const preference: any = {
             items: mpItems,
+
             back_urls: {
                 success: `${baseUrl}/checkout/success`,
                 failure: `${baseUrl}/checkout/failure`,
                 pending: `${baseUrl}/checkout/pending`,
             },
+
             auto_return: "approved",
             external_reference: userId,
             notification_url: `${baseUrl}/api/mercadopago/webhook`,
             statement_descriptor: "BENE BRASIL",
+
+            payment_methods: {
+                excluded_payment_types: [],
+                excluded_payment_methods: [],
+                installments: 12
+            }
         };
+
 
         // Adicionar metadata apenas se houver dados
         if (orderData) {

@@ -22,7 +22,7 @@ type ButtonProps = BaseProps & ComponentPropsWithoutRef<"button">;
 type AnchorProps = BaseProps & ComponentPropsWithoutRef<"a">;
 
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2A5473]/30 disabled:opacity-60 disabled:cursor-not-allowed";
+  "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2A5473]/30 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer";
 
 const variantClasses: Record<Variant, string> = {
   primary: "bg-[#2A5473] hover:opacity-90 text-white",

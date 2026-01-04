@@ -57,7 +57,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems((prev) => {
       // Create unique key for this variant
       const variantKey = `${product.id}-${product.size || 'default'}-${product.color || 'default'}`;
-      
+
       const existing = prev.find((item) => item.variantKey === variantKey);
       if (existing) {
         return prev.map((item) =>
@@ -104,6 +104,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = () => {
     setItems([]);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("bene-cart");
+    }
   };
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);

@@ -51,7 +51,11 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     
     if (href) {
       return (
-        <Link href={href} className={classes}>
+        <Link 
+          href={href} 
+          className={classes}
+          aria-label={props["aria-label"]}
+        >
           {children}
         </Link>
       )

@@ -29,6 +29,12 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  webpack: (config) => {
+    config.watchOptions = {
+      ignored: ['**/node_modules', 'C:/**'],
+    };
+    return config;
+  },
   async headers() {
     return [
       {

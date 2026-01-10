@@ -5,6 +5,7 @@ import localFont from "next/font/local";
 import Header from "../components/Header";
 import NavLink from "../components/ui/NavLink";
 import { ToastProvider } from "@/components/ui/Toast";
+import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import "./globals.css";
@@ -69,6 +70,7 @@ export default function RootLayout({
             <ToastProvider>
               <Header />
               <main>{children}</main>
+              {/* <Toaster richColors position="bottom-right" /> */}
             </ToastProvider>
           </CartProvider>
         </AuthProvider>

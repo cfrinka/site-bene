@@ -3,7 +3,15 @@
 import { useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/Button";
-import Badge from "@/components/ui/Badge";
+import { Badge } from "@/components/ui/Badge";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { Separator } from "@/components/ui/separator";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 
 const ALL_COLORS = [
     { name: "Preto", value: "#000000" },
@@ -37,8 +45,6 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart }: 
     const [selectedColor, setSelectedColor] = useState<string>("");
     const [imageLoading, setImageLoading] = useState<boolean>(true);
 
-    if (!isOpen) return null;
-
     const availableColors = product.colors
         ? ALL_COLORS.filter(c => product.colors!.includes(c.name))
         : [];
@@ -47,30 +53,25 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart }: 
         ? product.colorImages[selectedColor]
         : product.cover;
 
-    // Reset loading state when image changes
     const handleColorChange = (color: string) => {
-        // Only show loading if actually changing to a different color
         if (color !== selectedColor) {
             setImageLoading(true);
             setSelectedColor(color);
         }
     };
 
+    const handleOpenChange = (open: boolean) => {
+        if (!open) onClose();
+    };
+
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
-            <div
-                className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto"
-                onClick={(e) => e.stopPropagation()}
-            >
-                <div className="sticky top-0 bg-white border-b border-neutral-200 px-6 py-4 flex items-center justify-between">
-                    <h2 className="text-4xl font-display font-bold">{product.title || "Produto"}</h2>
-                    <button
-                        onClick={onClose}
-                        className="text-neutral-500 hover:text-neutral-700 text-2xl w-8 h-8 flex items-center justify-center cursor-pointer"
-                    >
-                        ✕
-                    </button>
-                </div>
+        <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
+                <DialogHeader className="sticky top-0 bg-background border-b px-6 py-4 z-10">
+                    <DialogTitle className="text-2xl md:text-3xl font-display">
+                        {product.title || "Produto"}
+                    </DialogTitle>
+                </DialogHeader>
 
                 <div className="p-6">
                     <div className="grid md:grid-cols-2 gap-8">
@@ -206,22 +207,20 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart }: 
                             </div>
 
                             {/* Add to Cart Button */}
-                            <div className="mt-6 pt-6 border-t border-neutral-200">
-                                <Button
-                                    variant="primary"
-                                    className="w-full"
-                                    onClick={() => {
-                                        onAddToCart(product);
-                                        onClose();
-                                    }}
-                                >
-                                    Adicionar ao carrinho
-                                </Button>
-                            </div>
+                            <Separator className="my-6" />
+                            <Button
+                                className="w-full"
+                                onClick={() => {
+                                    onAddToCart(product);
+                                    onClose();
+                                }}
+                            >
+                                Adicionar ao carrinho
+                            </Button>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
+            </DialogContent>
+        </Dialog>
     );
 }

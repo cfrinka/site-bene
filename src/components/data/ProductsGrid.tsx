@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { listCollection, isFirebaseEnabled } from "@/lib/firebase";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import Badge from "@/components/ui/Badge";
+import { Badge } from "@/components/ui/Badge";
 import { ProductCardSkeleton } from "@/components/ui/Skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
@@ -238,7 +238,7 @@ export default function ProductsGrid({
               )}
             </div>
             <CardBody>
-              <h3 className="font-display font-semibold text-xl tracking-wide">{p.title ?? "Produto"}</h3>
+              <h3 className="font-semibold text-lg">{p.title ?? "Produto"}</h3>
               <p className="mt-1 text-sm text-neutral-600">Algodão premium • Unissex</p>
 
               {/* Color swatches */}
@@ -267,7 +267,7 @@ export default function ProductsGrid({
 
               <div className="mt-3 flex items-center justify-between">
                 <span className="text-[#1f9d61] font-semibold">R$ {(p.price ?? 0).toFixed(2)}</span>
-                <Button size="sm" onClick={() => handleAddToCart(p)}>Adicionar</Button>
+                <Button size="sm" className="cursor-pointer" onClick={() => handleAddToCart(p)}>Adicionar</Button>
               </div>
             </CardBody>
           </Card>

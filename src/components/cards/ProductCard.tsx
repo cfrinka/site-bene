@@ -4,9 +4,18 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Card, CardBody, CardMedia } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import Badge from "@/components/ui/Badge";
+import { Badge } from "@/components/ui/Badge";
 import { isFirebaseEnabled, saveDocument, updateDocument, deleteDocument, listCollection } from "@/lib/firebase";
 import EditProductModal from "@/components/modals/EditProductModal";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { MoreHorizontal, Pencil, Star, Trash2, FolderPlus } from "lucide-react";
 
 export type Product = { id: string; title?: string; price?: number; cover?: string; sizes?: string[]; colors?: string[]; colorImages?: Record<string, string> };
 
@@ -15,7 +24,6 @@ type Collection = { id: string; title?: string; productIds?: string[] };
 export default function ProductCard({ product, inHighlights = false, collectionsCount = 0, collectionNames = [] }: { product: Product; inHighlights?: boolean; collectionsCount?: number; collectionNames?: string[] }) {
   const p = product || ({} as Product);
   const enabled = isFirebaseEnabled();
-  const [open, setOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [collections, setCollections] = useState<Collection[]>([]);
 
@@ -29,7 +37,6 @@ export default function ProductCard({ product, inHighlights = false, collections
   async function addToHighlights() {
     if (!enabled) return;
     await saveDocument("highlights", { productId: p.id, title: p.title || "", subtitle: "", cover: p.cover || "" });
-    setOpen(false);
   }
 
   async function addToCollection(collectionId: string) {
@@ -38,13 +45,11 @@ export default function ProductCard({ product, inHighlights = false, collections
     const ids = Array.isArray(col?.productIds) ? [...(col!.productIds as string[])] : [];
     if (!ids.includes(p.id)) ids.push(p.id);
     await updateDocument("collections", collectionId, { productIds: ids });
-    setOpen(false);
   }
 
   async function removeProduct() {
     if (!enabled) return;
     await deleteDocument("products", p.id);
-    setOpen(false);
   }
 
   return (
@@ -81,43 +86,50 @@ export default function ProductCard({ product, inHighlights = false, collections
         )}
 
         <div className="mt-3 flex items-center justify-between gap-2">
-          <Button size="sm" variant="outline" onClick={() => setOpen((v) => !v)}>Ações</Button>
-          <div className="flex flex-wrap items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline">
+                <MoreHorizontal className="h-4 w-4 mr-1" />
+                Ações
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-48">
+              <DropdownMenuItem onClick={() => setEditModalOpen(true)}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Editar produto
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={addToHighlights}>
+                <Star className="h-4 w-4 mr-2" />
+                Adicionar aos destaques
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-xs text-muted-foreground">
+                <FolderPlus className="h-3 w-3 mr-1 inline" />
+                Adicionar à coleção
+              </DropdownMenuLabel>
+              {collections.length === 0 ? (
+                <DropdownMenuItem disabled>Nenhuma coleção</DropdownMenuItem>
+              ) : (
+                collections.map((c) => (
+                  <DropdownMenuItem key={c.id} onClick={() => addToCollection(c.id)}>
+                    {c.title || "Coleção"}
+                  </DropdownMenuItem>
+                ))
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={removeProduct} className="text-destructive focus:text-destructive">
+                <Trash2 className="h-4 w-4 mr-2" />
+                Excluir produto
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <div className="flex flex-wrap items-center gap-1">
             {inHighlights && <Badge className="bg-brand-primary text-white">Destaque</Badge>}
             {collectionNames.map((name, idx) => (
-              <Badge key={`${p.id}-col-${idx}`} className="bg-neutral-900/80 text-white">{name}</Badge>
+              <Badge key={`${p.id}-col-${idx}`} variant="secondary">{name}</Badge>
             ))}
           </div>
         </div>
-        {open && (
-          <div className="mt-3 rounded-md border border-neutral-200 text-sm">
-            <button
-              className="w-full text-left px-3 py-2 hover:bg-neutral-50"
-              onClick={() => {
-                setEditModalOpen(true);
-                setOpen(false);
-              }}
-            >
-              Editar produto
-            </button>
-            <div className="border-t" />
-            <button className="w-full text-left px-3 py-2 hover:bg-neutral-50" onClick={addToHighlights}>Adicionar aos destaques</button>
-            <div className="border-t" />
-            <div className="px-3 py-2 text-xs text-neutral-600">Adicionar à coleção</div>
-            <div className="max-h-40 overflow-auto">
-              {collections.length === 0 && (
-                <div className="px-3 py-2 text-neutral-500">Nenhuma coleção</div>
-              )}
-              {collections.map((c) => (
-                <button key={c.id} className="w-full text-left px-3 py-2 hover:bg-neutral-50" onClick={() => addToCollection(c.id)}>
-                  {c.title || "Coleção"}
-                </button>
-              ))}
-            </div>
-            <div className="border-t" />
-            <button className="w-full text-left px-3 py-2 text-[#BE1622] hover:bg-neutral-50" onClick={removeProduct}>Excluir produto</button>
-          </div>
-        )}
       </CardBody>
 
       {editModalOpen && (

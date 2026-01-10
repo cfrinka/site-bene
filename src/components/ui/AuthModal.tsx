@@ -3,6 +3,16 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "./Button";
+import { Input } from "./input";
+import { Label } from "./label";
+import { Alert, AlertDescription } from "./alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "./dialog";
 
 type AuthModalProps = {
   isOpen: boolean;
@@ -19,8 +29,6 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  if (!isOpen) return null;
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -35,7 +43,6 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
       onSuccess();
       onClose();
     } catch (err: any) {
-      // Map Firebase error codes to user-friendly messages
       const errorMessage = err.message || err.code || "Ocorreu um erro";
 
       if (errorMessage.includes("email-already-in-use") || errorMessage.includes("auth/email-already-in-use")) {
@@ -60,52 +67,59 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
     }
   };
 
+  const handleOpenChange = (open: boolean) => {
+    if (!open) onClose();
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-display font-bold">
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-display">
             {mode === "login" ? "Entrar" : "Criar conta"}
-          </h2>
-          <button onClick={onClose} className="text-neutral-500 hover:text-neutral-700 cursor-pointer">
-            ✕
-          </button>
-        </div>
+          </DialogTitle>
+          <DialogDescription>
+            {mode === "login" 
+              ? "Entre com sua conta para continuar"
+              : "Crie sua conta para começar a comprar"
+            }
+          </DialogDescription>
+        </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {mode === "register" && (
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Nome</label>
-              <input
+            <div className="space-y-2">
+              <Label htmlFor="displayName">Nome</Label>
+              <Input
+                id="displayName"
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                className="w-full rounded-md border border-neutral-300 px-3 py-2 outline-none focus:border-brand-primary"
                 placeholder="Seu nome"
                 required
               />
             </div>
           )}
 
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">E-mail</label>
-            <input
+          <div className="space-y-2">
+            <Label htmlFor="email">E-mail</Label>
+            <Input
+              id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-md border border-neutral-300 px-3 py-2 outline-none focus:border-brand-primary"
               placeholder="seu@email.com"
               required
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">Senha</label>
-            <input
+          <div className="space-y-2">
+            <Label htmlFor="password">Senha</Label>
+            <Input
+              id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-md border border-neutral-300 px-3 py-2 outline-none focus:border-brand-primary"
               placeholder="••••••••"
               required
               minLength={6}
@@ -113,24 +127,24 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
           </div>
 
           {error && (
-            <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-2">
-              {error}
-            </div>
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
 
-          <Button type="submit" variant="primary" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Carregando..." : mode === "login" ? "Entrar" : "Criar conta"}
           </Button>
         </form>
 
-        <div className="mt-4 text-center text-sm">
+        <div className="text-center text-sm text-muted-foreground">
           {mode === "login" ? (
             <p>
               Não tem uma conta?{" "}
               <button
                 type="button"
                 onClick={() => setMode("register")}
-                className="text-brand-primary hover:underline font-medium"
+                className="text-primary hover:underline font-medium"
               >
                 Criar conta
               </button>
@@ -141,14 +155,14 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
               <button
                 type="button"
                 onClick={() => setMode("login")}
-                className="text-brand-primary hover:underline font-medium"
+                className="text-primary hover:underline font-medium"
               >
                 Entrar
               </button>
             </p>
           )}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

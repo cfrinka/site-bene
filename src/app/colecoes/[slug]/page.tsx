@@ -7,7 +7,7 @@ import Container from "@/components/ui/Container";
 import { H1, Text } from "@/components/ui/Typography";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
-import Badge from "@/components/ui/Badge";
+import { Badge } from "@/components/ui/Badge";
 import { ProductCardSkeleton } from "@/components/ui/Skeleton";
 import { getFirebase, isFirebaseEnabled, listCollection, subscribeCollection } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
@@ -236,7 +236,7 @@ export default function CollectionDetailPage({ params }: { params: Promise<{ slu
                   <p className="mt-1 text-sm text-neutral-600">Algodão premium • Unissex</p>
                   <div className="mt-3 flex items-center justify-between">
                     <span className="text-[#1f9d61] font-semibold">R$ {(p.price ?? 0).toFixed(2)}</span>
-                    <Button size="sm" onClick={() => handleAddToCart(p)}>Adicionar</Button>
+                    <Button size="sm" className="cursor-pointer" onClick={() => handleAddToCart(p)}>Adicionar</Button>
                   </div>
                 </CardBody>
               </Card>

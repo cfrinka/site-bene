@@ -1,93 +1,74 @@
-"use client";
+import * as React from "react"
+import { Slot } from "@radix-ui/react-slot"
+import { cva, type VariantProps } from "class-variance-authority"
+import Link from "next/link"
 
-import Link from "next/link";
-import { ComponentPropsWithoutRef, ReactNode, forwardRef } from "react";
+import { cn } from "@/lib/utils"
 
-type Variant = "primary" | "secondary" | "danger" | "outline" | "ghost";
-type Size = "sm" | "md" | "lg";
+const buttonVariants = cva(
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  {
+    variants: {
+      variant: {
+        default:
+          "bg-primary text-primary-foreground shadow hover:bg-primary/90",
+        destructive:
+          "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
+        outline:
+          "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
+        secondary:
+          "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
+        ghost: "hover:bg-accent hover:text-accent-foreground",
+        link: "text-primary underline-offset-4 hover:underline",
+        primary: "bg-primary text-primary-foreground shadow hover:bg-primary/90",
+        danger: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
+      },
+      size: {
+        default: "h-9 px-4 py-2",
+        sm: "h-8 rounded-md px-3 text-xs",
+        md: "h-9 px-4 py-2",
+        lg: "h-10 rounded-md px-8",
+        icon: "h-9 w-9",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+    },
+  }
+)
 
-type BaseProps = {
-  variant?: Variant;
-  size?: Size;
-  href?: string;
-  className?: string;
-  leftIcon?: ReactNode;
-  rightIcon?: ReactNode;
-  loading?: boolean;
-  asChild?: boolean;
-};
-
-type ButtonProps = BaseProps & ComponentPropsWithoutRef<"button">;
-
-type AnchorProps = BaseProps & ComponentPropsWithoutRef<"a">;
-
-const base =
-  "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2A5473]/30 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer";
-
-const variantClasses: Record<Variant, string> = {
-  primary: "bg-[#2A5473] hover:opacity-90 text-white",
-  secondary: "bg-[#355444] hover:opacity-90 text-white",
-  danger: "bg-[#BE1622] hover:opacity-90 text-white",
-  outline: "border border-neutral-300 text-neutral-800 hover:bg-neutral-50",
-  ghost: "text-neutral-800 hover:bg-neutral-100",
-};
-
-const sizeClasses: Record<Size, string> = {
-  sm: "px-3 py-1.5 text-sm",
-  md: "px-4 py-2 text-sm",
-  lg: "px-5 py-3",
-};
-
-function Spinner() {
-  return (
-    <svg className="animate-spin h-4 w-4 text-current" viewBox="0 0 24 24">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-    </svg>
-  );
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {
+  asChild?: boolean
+  href?: string
 }
 
-export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonProps | AnchorProps>(
-  function Button(
-    { variant = "primary", size = "md", href, className = "", leftIcon, rightIcon, loading = false, asChild = false, children, ...props },
-    ref
-  ) {
-    const classes = `${base} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`;
-
-    const content = (
-      <>
-        {loading ? <Spinner /> : leftIcon}
-        <span>{children}</span>
-        {rightIcon}
-      </>
-    );
-
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant, size, asChild = false, href, children, ...props }, ref) => {
+    const classes = cn(buttonVariants({ variant, size, className }))
+    
     if (href) {
-      const anchorProps = props as AnchorProps;
       return (
-        <Link href={href} className={classes} ref={ref as any} {...(anchorProps as any)}>
-          {content}
+        <Link href={href} className={classes}>
+          {children}
         </Link>
-      );
+      )
     }
-
-    if (asChild) {
-      const Any = (props as any).as || "span";
-      return (
-        <Any className={classes} ref={ref as any} {...(props as any)}>
-          {content}
-        </Any>
-      );
-    }
-
-    const buttonProps = props as ButtonProps;
-    const { type = "button", ...rest } = buttonProps as any;
+    
+    const Comp = asChild ? Slot : "button"
     return (
-      <button className={classes} ref={ref as any} type={type} {...(rest as any)}>
-        {content}
-      </button>
-    );
+      <Comp
+        className={classes}
+        ref={ref}
+        {...props}
+      >
+        {children}
+      </Comp>
+    )
   }
-);
+)
+Button.displayName = "Button"
 
-export default Button;
+export { Button, buttonVariants }
